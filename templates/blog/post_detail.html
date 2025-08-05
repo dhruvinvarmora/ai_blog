@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+{% load blog_extras %}
 
 {% block content %}
 <section class="blog-post-detail">
@@ -23,11 +24,11 @@
                     
                     <!-- Main Content -->
                     <div class="post-content">
-                        {{ post.content|safe }}
+                        {{ post.content|insert_images:post|safe }}
                     </div>
 
                     <!-- Plant Care Images Section -->
-                    <div class="plant-care-images">
+                    {% comment %} <div class="plant-care-images">
                         <h2 class="section-title">Visual Care Guide</h2>
                         <div class="row">
                             {% for image in post.images.all %}
@@ -44,7 +45,7 @@
                             </div>
                             {% endfor %}
                         </div>
-                    </div>
+                    </div> {% endcomment %}
                 </article>
             </div>
             

@@ -40,13 +40,24 @@ def post_featured_path(instance, filename):
     return f'posts/{post_slug}/featured/{filename}'
 
 class PostImage(models.Model):
+    IMAGE_TYPES = (
+        ('overview', 'Overview'),
+        ('care', 'Care'),
+        ('closeup', 'Closeup'),
+        ('indoor', 'Indoor'),
+        ('healthy', 'Healthy'),
+        ('decor', 'Decor'),
+    )
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='images')
     image = models.ImageField(upload_to=post_image_path, blank=True, null=True)
     image_url = models.URLField(blank=True)  # Keep for external URLs
     caption = models.CharField(max_length=200, blank=True)
     alt_text = models.CharField(max_length=200, blank=True)
+    # order = models.CharField(null=True, blank=True, max_length=255)
     order = models.PositiveIntegerField(default=0)
     is_downloaded = models.BooleanField(default=False)
+    image_type = models.CharField(max_length=20, choices=IMAGE_TYPES)
+
     
     class Meta:
         ordering = ['order']
@@ -170,3 +181,7 @@ class Post(models.Model):
                 'order': img.order
             })
         return sorted(images, key=lambda x: x['order'])
+    
+    def get_images_by_type(self):
+        """Get images organized by their type"""
+        return {img.image_type: img for img in self.images.all().order_by('order')}

@@ -104,7 +104,7 @@ class Command(BaseCommand):
             return images
 
 
-    def download_and_store_image(self, image_url, post, caption, alt_text, order):
+    def download_and_store_image(self, image_url, post, caption, alt_text, order, image_type):
         """Download image from URL and store locally using ContentFile"""
         try:
             # Download image - returns ContentFile and filename
@@ -113,10 +113,14 @@ class Command(BaseCommand):
                 print(f"❌ Failed to download image: {image_url}")
                 return None
             
+            # Verify it's a plant image
+            content_file.seek(0)  # Rewind the file
             if not is_plant_image(content_file.read()):
                 print(f"⚠️ Skipping non-plant image: {image_url}")
                 return None
-            # Optimize image - returns optimized ContentFile
+            
+            # Rewind and optimize
+            content_file.seek(0)
             optimized_content = optimize_image(content_file)
             
             # Create PostImage object
@@ -125,14 +129,15 @@ class Command(BaseCommand):
                 image_url=image_url,
                 caption=caption,
                 alt_text=alt_text,
-                order=order
+                order=order,  # This should be a number (1, 2, 3...)
+                image_type=image_type  # This is the type (overview, care, etc.)
             )
             
             # Save the image file to the model
             post_image.image.save(
-                filename,  # Use the generated filename
-                optimized_content,  # The optimized ContentFile
-                save=True  # Save the model instance
+                filename,
+                optimized_content,
+                save=True
             )
             
             print(f"✅ Downloaded and stored: {filename}")
@@ -289,8 +294,21 @@ class Command(BaseCommand):
         5. Add scientific name and family information if applicable
         6. Include growth rate, max height, blooming/harvest seasons
         7. Make it informative and engaging for plant enthusiasts
-        8. Suggest 6 different types of images that would make the post visually appealing
+        8. Insert image placeholders at logical points using [IMAGE:type] tags. 
+            Place them after these sections:
+            [IMAGE:overview] - After introduction
+            [IMAGE:care] - After Care Difficulty
+            [IMAGE:closeup] - After Watering Needs
+            [IMAGE:indoor] - After Temperature and Humidity
+            [IMAGE:healthy] - After Growth Rate
+            [IMAGE:decor] - After Benefits section
+        Example structure:
+        <h2>Introduction</h2>
+        <p>...</p>
+        [IMAGE:overview]
 
+        <h2>Care Difficulty</h2>
+        <p>...</p>
         Return the response in this exact JSON format:
         {{
         "title": "Complete title",
@@ -387,7 +405,8 @@ class Command(BaseCommand):
                     post,
                     caption,
                     alt_text,
-                    i+1
+                    i+1,         # order number
+                    image_type    # image type
                 )
                 
                 if post_image:
@@ -403,10 +422,11 @@ class Command(BaseCommand):
             thumbnail_query = f"{plant_name} {category}"
             thumbnail_images = self.get_unsplash_images(thumbnail_query, 1)
             if thumbnail_images:
-                content, filename = download_image(thumbnail_images[0]['url'])
-                if content:
-                    optimized_content = optimize_image(content)
-                    post.thumbnail = optimized_content
+                content_file, filename = download_image(thumbnail_images[0]['url'])
+                if content_file:
+                    optimized_content = optimize_image(content_file)
+                    # Save properly using ContentFile
+                    post.thumbnail.save(filename, optimized_content, save=False)
                     post.thumbnail_url = thumbnail_images[0]['url']
                     print(f"📸 Downloaded thumbnail: {filename}")
             
@@ -414,10 +434,11 @@ class Command(BaseCommand):
             featured_query = f"{plant_name} close up"
             featured_images = self.get_unsplash_images(featured_query, 1)
             if featured_images:
-                content, filename = download_image(featured_images[0]['url'])
-                if content:
-                    optimized_content = optimize_image(content)
-                    post.featured_image = optimized_content
+                content_file, filename = download_image(featured_images[0]['url'])
+                if content_file:
+                    optimized_content = optimize_image(content_file)
+                    # Save properly using ContentFile
+                    post.featured_image.save(filename, optimized_content, save=False)
                     post.featured_image_url = featured_images[0]['url']
                     print(f"📸 Downloaded featured image: {filename}")
             
@@ -427,7 +448,6 @@ class Command(BaseCommand):
             print(f"❌ Error downloading main images: {e}")
 
     def handle(self, *args, **kwargs):
-        success = False
         try:
             category = kwargs.get('category')
             force = kwargs.get('force')
@@ -451,16 +471,16 @@ class Command(BaseCommand):
             # Check if post already exists
             slug = slugify(topic)
             if Post.objects.filter(slug=slug).exists() and not force:
-                print(f"⚠️ Post already exists: {topic}")
+                self.stdout.write(self.style.WARNING(f"⚠️ Post already exists: {topic}"))
                 return
             
-            print(f"🌱 Generating post for category: {category}")
-            print(f"📝 Topic: {topic}")
+            self.stdout.write(f"🌱 Generating post for category: {category}")
+            self.stdout.write(f"📝 Topic: {topic}")
             
             # Generate content
             data = self.generate_post_content(topic, category)
             if not data:
-                print("❌ Failed to generate content")
+                self.stdout.write(self.style.ERROR("❌ Failed to generate content"))
                 return
             
             # Extract plant name from topic
@@ -501,20 +521,16 @@ class Command(BaseCommand):
             # Download and store additional images
             self.download_and_store_post_images(post, plant_name, category)
 
-            if post.thumbnail or post.featured_image:
-                success = True
+            self.stdout.write(self.style.SUCCESS(f"✅ Post created successfully: {data['title']}"))
+            self.stdout.write(f"📸 Thumbnail: {post.thumbnail_display}")
+            self.stdout.write(f"🎥 Video: {video_url}")
+            self.stdout.write(f"🏷️ Tags: {', '.join([tag.name for tag in tags])}")
+            self.stdout.write(f"🖼️ Created {post.images.count()} additional images")
+            self.stdout.write(f"💾 All images stored locally in media/posts/{post.slug}/")
             
-            print(f"✅ Post created successfully: {data['title']}")
-            print(f"📸 Thumbnail: {post.thumbnail_display}")
-            print(f"🎥 Video: {video_url}")
-            print(f"🏷️ Tags: {', '.join([tag.name for tag in tags])}")
-            print(f"🖼️ Created {post.images.count()} additional images")
-            print(f"💾 All images stored locally in media/posts/{post.slug}/")
         except Exception as e:
-            print(f"❌ Error in post generation: {e}")
+            self.stdout.write(self.style.ERROR(f"❌ Error in post generation: {e}"))
             # Delete the post if it was partially created
             if 'post' in locals() and post.pk:
                 post.delete()
-                print("❌ Deleted incomplete post due to error")
-    
-        return success
+                self.stdout.write(self.style.ERROR("❌ Deleted incomplete post due to error"))

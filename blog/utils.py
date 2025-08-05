@@ -1,4 +1,5 @@
 import os
+import random
 import requests
 from urllib.parse import urlparse
 from django.core.files.base import ContentFile
@@ -7,7 +8,7 @@ import mimetypes
 import hashlib
 from PIL import Image
 import io
-
+import numpy as np
 def download_image(url, filename=None):
     """Download image from URL and return as ContentFile with unique filename"""
     try:
@@ -35,10 +36,6 @@ def download_image(url, filename=None):
 def is_plant_image(image_content):
     """Simple verification that image contains plants"""
     try:
-        from PIL import Image
-        import io
-        import numpy as np
-        
         # Open image and convert to RGB
         img = Image.open(io.BytesIO(image_content)).convert('RGB')
         img = img.resize((224, 224))  # Resize for processing
@@ -83,6 +80,11 @@ def optimize_image(image_file, max_size=(1200, 800), quality=85):
         
         # Create new ContentFile with original filename
         return ContentFile(output.getvalue(), name=image_file.name)
+        
+    except Exception as e:
+        print(f"Error optimizing image: {e}")
+        # Return original content if optimization fails
+        return image_file
         
     except Exception as e:
         print(f"Error optimizing image: {e}")
@@ -139,55 +141,118 @@ def get_plant_specific_images(plant_name, category, count=6):
     queries = base_queries.get(category, base_queries['plants'])
     return queries[:count]
 
-def create_image_captions(plant_name, category, image_type):
+def create_image_captions(plant_name, context, section_title_or_image_type=None):
     """
-    Create engaging captions for plant images
+    Create section-specific or type-specific captions for plant images
     """
-    captions = {
-        'plants': {
-            'overview': f"Beautiful {plant_name} plant in its natural habitat",
-            'care': f"Essential care tips for your {plant_name} plant",
-            'closeup': f"Detailed view of {plant_name} leaves and structure",
-            'indoor': f"{plant_name} as a stunning indoor decoration",
-            'healthy': f"Healthy and thriving {plant_name} specimen",
-            'decor': f"{plant_name} adding elegance to your home"
-        },
-        'flowers': {
-            'overview': f"Stunning {plant_name} flowers in full bloom",
-            'care': f"Expert care guide for {plant_name} flowers",
-            'closeup': f"Close-up of beautiful {plant_name} petals",
-            'garden': f"{plant_name} flowers in a vibrant garden",
-            'bouquet': f"Gorgeous {plant_name} flower arrangement",
-            'field': f"Breathtaking field of {plant_name} flowers"
-        },
-        'fruits': {
-            'overview': f"Ripe and juicy {plant_name} fruits",
-            'care': f"Growing and harvesting {plant_name} fruits",
-            'closeup': f"Detailed view of {plant_name} fruit structure",
-            'tree': f"{plant_name} tree laden with fruits",
-            'ripe': f"Perfectly ripe {plant_name} ready for harvest",
-            'fresh': f"Fresh and organic {plant_name} fruits"
-        },
-        'gardening': {
-            'overview': f"Professional {plant_name} gardening techniques",
-            'care': f"Essential gardening tips for {plant_name}",
-            'closeup': f"Detailed gardening process for {plant_name}",
-            'soil': f"Perfect soil preparation for {plant_name}",
-            'organic': f"Organic gardening methods for {plant_name}",
-            'sustainable': f"Sustainable {plant_name} gardening practices"
-        },
-        'care': {
-            'overview': f"Complete care guide for {plant_name}",
-            'watering': f"Proper watering techniques for {plant_name}",
-            'pruning': f"Expert pruning tips for {plant_name}",
-            'fertilizing': f"Fertilizing schedule for {plant_name}",
-            'maintenance': f"Regular maintenance for {plant_name}",
-            'health': f"Keeping your {plant_name} healthy and strong"
-        }
+    # Section-based captions
+    section_captions = {
+        'Light Requirements': [
+            f"Ideal lighting setup for {plant_name}",
+            f"{plant_name} in perfect sunlight conditions",
+            f"Proper light exposure for healthy {plant_name}"
+        ],
+        'Care Difficulty': [
+            f"Understanding {plant_name} care requirements",
+            f"Skill level needed for {plant_name} maintenance",
+            f"{plant_name} difficulty assessment"
+        ],
+        'Watering Needs': [
+            f"Proper watering technique for {plant_name}",
+            f"How to water {plant_name} correctly",
+            f"Moisture needs of {plant_name} plants"
+        ],
+        'Soil and Potting': [
+            f"Best soil mix for {plant_name}",
+            f"Potting requirements for {plant_name}",
+            f"Root system and soil needs for {plant_name}"
+        ],
+        'Temperature and Humidity': [
+            f"Climate conditions for {plant_name}",
+            f"Humidity preferences of {plant_name}",
+            f"Temperature range for thriving {plant_name}"
+        ],
+        'Growth Rate and Maximum Height': [
+            f"Growth timeline of {plant_name}",
+            f"Mature size expectations for {plant_name}",
+            f"Tracking {plant_name}'s development"
+        ],
+        'Troubleshooting Common Issues': [
+            f"Solving {plant_name} plant problems",
+            f"Common {plant_name} issues and solutions",
+            f"Reviving struggling {plant_name}"
+        ],
+        'Fertilizing': [
+            f"Feeding schedule for {plant_name}",
+            f"Nutrient requirements of {plant_name}",
+            f"Best fertilizers for {plant_name}"
+        ],
+        'Cleaning': [
+            f"Proper {plant_name} leaf maintenance",
+            f"Dusting and cleaning {plant_name} foliage",
+            f"Leaf care for shiny {plant_name} leaves"
+        ],
+        'Benefits': [
+            f"Health benefits of {plant_name}",
+            f"Why {plant_name} makes a great houseplant",
+            f"Advantages of growing {plant_name}"
+        ]
     }
     
-    category_captions = captions.get(category, captions['plants'])
-    return category_captions.get(image_type, f"Beautiful {plant_name}")
+    # Check if we're handling a section title
+    for section, captions in section_captions.items():
+        if section.lower() in section_title_or_image_type.lower():
+            return random.choice(captions)
+    
+    # Image type-based captions
+    type_captions = {
+        'overview': [
+            f"Overview of {plant_name} plant",
+            f"Full view of healthy {plant_name}",
+            f"{plant_name} in natural environment"
+        ],
+        'care': [
+            f"Caring for {plant_name} plant",
+            f"Maintenance tips for {plant_name}",
+            f"{plant_name} care techniques"
+        ],
+        'closeup': [
+            f"Close-up of {plant_name} details",
+            f"Detailed view of {plant_name}",
+            f"Intricate details of {plant_name}"
+        ],
+        'indoor': [
+            f"{plant_name} as indoor plant",
+            f"Indoor {plant_name} decoration",
+            f"Growing {plant_name} inside home"
+        ],
+        'healthy': [
+            f"Healthy {plant_name} specimen",
+            f"Thriving {plant_name} example",
+            f"Vibrant {plant_name} in peak condition"
+        ],
+        'decor': [
+            f"{plant_name} in home decor",
+            f"Styling with {plant_name}",
+            f"Decorative use of {plant_name}"
+        ]
+    }
+    
+    # Category-specific overrides
+    if context == 'flowers':
+        type_captions['overview'] = [
+            f"Beautiful {plant_name} flowers",
+            f"{plant_name} in full bloom",
+            f"Colorful {plant_name} display"
+        ]
+    elif context == 'fruits':
+        type_captions['overview'] = [
+            f"Fresh {plant_name} fruits",
+            f"Ripe {plant_name} ready for harvest",
+            f"{plant_name} fruit on the tree"
+        ]
+    
+    return random.choice(type_captions.get(section_title_or_image_type, [f"{plant_name} plant"]))
 
 def generate_alt_text(plant_name, category, image_type):
     """
@@ -220,5 +285,10 @@ def generate_alt_text(plant_name, category, image_type):
         }
     }
     
-    category_alts = alt_texts.get(category, alt_texts['plants'])
-    return category_alts.get(image_type, f"{plant_name} plant image") 
+    # For gardening and care, use the plants category as default
+    if category in alt_texts:
+        category_alts = alt_texts[category]
+    else:
+        category_alts = alt_texts['plants']
+    
+    return category_alts.get(image_type, f"{plant_name} plant image")
