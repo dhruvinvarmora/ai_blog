@@ -1,6 +1,6 @@
 from django.utils import timezone
 from .models import PostScheduler
-from .management.commands.generate_daily_post import Command
+from .management.commands.generate_post import Command
 
 class DailyPostScheduler:
     def __init__(self, get_response):
