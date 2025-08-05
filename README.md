@@ -1,203 +1,200 @@
-# Automated Plant Blog System
+# 🌿 GreenThumb — AI-Powered Daily Plant Blog
 
-An intelligent Django blog system that automatically generates daily posts about plants, flowers, and fruits with detailed content, images, and video URLs.
+An **automated AI blog system** built with Django that posts **daily articles** about plants, flowers, fruits, gardening tips, and care guides — powered by **Gemini AI**, **Cloudinary**, and image/video enrichment from **Unsplash** and **YouTube**.
 
-## Features
+🔗 Live Site: [https://greenthumb-k78v.onrender.com](https://greenthumb-k78v.onrender.com)  
+📦 GitHub: [https://github.com/dhruvinvarmora/ai_blog](https://github.com/dhruvinvarmora/ai_blog)
 
-- 🌱 **Automated Daily Posts**: Generates posts about plants, flowers, and fruits
-- 📸 **Automatic Images**: Fetches relevant images from Unsplash
-- 🎥 **Video Integration**: Includes YouTube video links
-- 🏷️ **Smart Categorization**: Organizes content by plants, flowers, fruits, gardening, and care
-- 📊 **Detailed Plant Info**: Scientific names, care difficulty, watering needs, etc.
-- 🔍 **Search & Filter**: Advanced search and category filtering
-- 📱 **Responsive Design**: Mobile-friendly templates
-- ⚡ **Performance Optimized**: Fast loading with pagination
+---
 
-## Categories
+## 🚀 Features
 
-- **Plants**: Houseplants, indoor plants, decorative plants
-- **Flowers**: All types of flowering plants and care guides
-- **Fruits**: Fruit trees, berry bushes, and harvesting guides
-- **Gardening**: General gardening tips and techniques
-- **Care**: Plant care, maintenance, and troubleshooting
+- 🧠 **AI-Generated Blog Posts** (Daily via Cron or Manual)
+- 🖼️ **HD Images from Unsplash**
+- 🎬 **YouTube Video Embeds**
+- 📚 **Categorized Content** (Plants, Flowers, Fruits, Gardening, Care)
+- 🧾 **Post Details** with Scientific Info & Care Instructions
+- 🌐 **SEO-Optimized Pages** with OpenGraph Metadata
+- 🖼️ **Plant Photo Gallery** with Lightbox Viewer
+- 🧩 **Tags & Categories** for navigation
+- ☁️ **Cloud Storage** via Cloudinary
+- ⚙️ **Admin Interface** for manual control
 
-## Setup Instructions
+---
 
-### 1. Install Dependencies
+## 🧠 Tech Stack
+
+| Component        | Tech                          |
+|------------------|-------------------------------|
+| Backend          | Django 5.2.4                  |
+| AI Model         | Gemini 1.5 Pro (Google)       |
+| Images           | Unsplash API                  |
+| Video Enrichment | YouTube Data API              |
+| Cloud Storage    | Cloudinary                    |
+| Deployment       | Render.com                    |
+| Database         | PostgreSQL                    |
+| Styling          | Bootstrap 5                   |
+
+---
+
+## 🛠️ Setup Instructions
+
+### 1. Clone & Install
 
 ```bash
+git clone https://github.com/dhruvinvarmora/ai_blog.git
+cd ai_blog
 pip install -r requirements.txt
 ```
 
 ### 2. Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root:
 
 ```env
-# Django Settings
-SECRET_KEY=your-secret-key-here
+# Django
+SECRET_KEY=your-django-secret-key
 DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+ALLOWED_HOSTS=localhost,127.0.0.1,greenthumb-k78v.onrender.com
 
-# AI API Keys
-GEMINI_API_KEY=your-gemini-api-key-here
+# Gemini AI
+GEMINI_API_KEY=your-gemini-api-key
 
-# Image API (Optional)
-UNSPLASH_ACCESS_KEY=your-unsplash-access-key-here
+# Unsplash (for images)
+UNSPLASH_ACCESS_KEY=your-unsplash-api-key
 
-# YouTube API (Optional)
-YOUTUBE_API_KEY=your-youtube-api-key-here
+# YouTube (for videos)
+YOUTUBE_API_KEY=your-youtube-api-key
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
+
+# Email (optional)
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-password
+DEFAULT_FROM_EMAIL=your-email@gmail.com
+
+# PostgreSQL
+DB_NAME=your-db-name
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+DB_HOST=your-db-host
+DB_PORT=5432
 ```
 
-### 3. Database Setup
+### 3. Migrate DB & Create Superuser
 
 ```bash
 python manage.py makemigrations
 python manage.py migrate
-```
-
-### 4. Create Superuser
-
-```bash
 python manage.py createsuperuser
 ```
 
-### 5. Run the Server
+### 4. Run Locally
 
 ```bash
 python manage.py runserver
 ```
 
-## Usage
+---
 
-### Generate a Single Post
+## ⚙️ Management Commands
 
+### Generate a Post
 ```bash
-# Generate today's post (automatic category rotation)
 python manage.py generate_post
-
-# Generate post for specific category
-python manage.py generate_post --category plants
-
-# Force generation even if post exists
-python manage.py generate_post --force
 ```
 
-### Automated Daily Posts
-
+### Force Generate a Specific Category
 ```bash
-# Generate daily post
+python manage.py generate_post --category plants --force
+```
+
+### Automated Daily Post
+```bash
 python manage.py auto_post_daily
-
-# Dry run (see what would be generated)
-python manage.py auto_post_daily --dry-run
 ```
 
-### Schedule Daily Posts
+### Schedule with Cron
+```bash
+# Add to crontab
+0 9 * * * cd /path/to/project && /path/to/venv/bin/python manage.py auto_post_daily
+```
 
-Add to your crontab for automatic daily posting:
+---
+
+## 🖼️ Templates & Pages
+
+- `/` – Homepage
+- `/blog/` – All posts
+- `/post/<slug>/` – Post detail
+- `/gallery/` – Plant gallery
+- `/admin/` – Admin interface
+
+---
+
+## 📸 Image & Video Integration
+
+- ✅ HD images from **Unsplash**
+- ✅ Embedded videos from **YouTube**
+- ✅ Cloud hosting via **Cloudinary**
+
+---
+
+## 🛠️ Customization Tips
+
+- Modify topics in: `blog/management/commands/generate_post.py`
+- Add new categories in: `Post.CATEGORY_CHOICES`
+- Tweak frontend design via `templates/` directory
+
+---
+
+## 🧪 Testing
 
 ```bash
-# Edit crontab
-crontab -e
-
-# Add this line to run daily at 9 AM
-0 9 * * * cd /path/to/your/project && python manage.py auto_post_daily
+python manage.py test
 ```
 
-## API Keys Setup
+---
 
-### 1. Gemini AI (Required)
-- Go to [Google AI Studio](https://makersuite.google.com/app/apikey)
-- Create an API key
-- Add to `.env` as `GEMINI_API_KEY`
+## 🧑‍💻 Admin Features
 
-### 2. Unsplash (Optional - for images)
-- Go to [Unsplash Developers](https://unsplash.com/developers)
-- Create an application
-- Get your access key
-- Add to `.env` as `UNSPLASH_ACCESS_KEY`
+- Add or edit posts manually
+- Manage categories/tags
+- Bulk delete or update
+- View analytics & views
 
-### 3. YouTube API (Optional - for better video search)
-- Go to [Google Cloud Console](https://console.cloud.google.com/)
-- Enable YouTube Data API v3
-- Create credentials
-- Add to `.env` as `YOUTUBE_API_KEY`
+---
 
-## Daily Topic Rotation
+## 🧩 Contributing
 
-The system automatically rotates through topics:
+1. Fork the repo
+2. Create a branch: `git checkout -b feature/new-feature`
+3. Commit your changes
+4. Push and open a PR
 
-- **Day 1-5**: Plants (Monstera, Snake Plant, Pothos, etc.)
-- **Day 6-10**: Flowers (Rose, Orchid, Tulip, etc.)
-- **Day 11-15**: Fruits (Strawberry, Tomato, Citrus, etc.)
-- **Day 16-20**: Gardening (Organic tips, Container gardening, etc.)
-- **Day 21-25**: Care (Watering, Light requirements, etc.)
-- **Day 26-31**: Cycles back to plants
+---
 
-## Admin Interface
+## 📄 License
 
-Access the admin panel at `/admin/` to:
+MIT License
 
-- Manage posts, categories, and tags
-- Edit generated content
-- Control publishing status
-- View analytics and view counts
-- Bulk actions for multiple posts
+---
 
-## Templates
+## 📬 Support
 
-The system includes responsive templates:
+Have issues? [Open a GitHub issue](https://github.com/dhruvinvarmora/ai_blog/issues)
 
-- **Homepage**: Featured posts and latest content
-- **Blog**: All posts with filtering
-- **Post Detail**: Full article with related posts
-- **Category Pages**: Posts filtered by category
-- **Search Results**: Search functionality
-- **Gallery**: Visual post showcase
+---
 
-## Customization
+## 🖼️ Optional: Add Screenshot
 
-### Adding New Topics
-
-Edit `blog/management/commands/generate_post.py` and add topics to the `get_daily_topics()` method.
-
-### Custom Categories
-
-Add new categories in the `Post` model's `CATEGORY_CHOICES`.
-
-### Template Styling
-
-Modify templates in the `templates/blog/` directory to match your design.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **API Key Errors**: Ensure all API keys are correctly set in `.env`
-2. **Image Loading**: Check Unsplash API key and rate limits
-3. **Content Generation**: Verify Gemini API key and quota
-4. **Database Errors**: Run migrations if models have changed
-
-### Logs
-
-Check Django logs for detailed error information:
-
-```bash
-python manage.py runserver --verbosity=2
+> 📸 Add screenshots of homepage, blog, and gallery if you'd like!
+> Place them in a `/screenshots` folder and update `README.md` with:
+```markdown
+![Homepage](screenshots/homepage.png)
+![Blog](screenshots/blog.png)
+![Gallery](screenshots/gallery.png)
 ```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
-
-## Support
-
-For issues and questions, please open an issue on GitHub. 
