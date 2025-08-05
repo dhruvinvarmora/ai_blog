@@ -1,0 +1,32 @@
+{% load static %}
+<!--Navbar -->
+<nav class="navbar navbar-expand-lg navbar-dark cyan fixed-top">
+    <div class="container">
+        <a class="navbar-brand" href="{% url 'blog:home' %}">
+        <img src="{% static 'images/nav-logo.png' %}" alt="nav-logo">
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent-4" aria-controls="navbarSupportedContent-4" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent-4">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+                    <a class="nav-link" href="{% url 'blog:home' %}">Home {% if request.resolver_match.url_name == 'home' %}<span class="sr-only">(current)</span>{% endif %}</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'about' %}active{% endif %}">
+                    <a class="nav-link" href="{% url 'blog:about' %}">About</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'gallery' %}active{% endif %}">
+                    <a class="nav-link" href="{% url 'blog:gallery' %}">Gallery</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'blog' %}active{% endif %}">
+                    <a class="nav-link" href="{% url 'blog:blog' %}">Read my blog</a>
+                </li>
+                <li class="nav-item {% if request.resolver_match.url_name == 'contact' %}active{% endif %}">
+                    <a class="nav-link" href="{% url 'blog:contact' %}">Contact</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<!--/.Navbar --> 

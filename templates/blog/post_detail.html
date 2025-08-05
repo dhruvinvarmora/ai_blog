@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<section class="blog-post-detail">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 col-md-12">
+                <article class="blog-post">
+                    <!-- Header with Featured Image -->
+                    <header class="post-header">
+                        <h1>{{ post.title }}</h1>
+                        <div class="post-meta">
+                            <span class="post-date">{{ post.created_at|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="featured-image">
+                            <img src="{{ post.featured_image.url }}" 
+                                 class="img-fluid" 
+                                 alt="{{ post.title }} plant care" 
+                                 loading="lazy">
+                        </div>
+                    </header>
+                    
+                    <!-- Main Content -->
+                    <div class="post-content">
+                        {{ post.content|safe }}
+                    </div>
+
+                    <!-- Plant Care Images Section -->
+                    <div class="plant-care-images">
+                        <h2 class="section-title">Visual Care Guide</h2>
+                        <div class="row">
+                            {% for image in post.images.all %}
+                            <div class="col-md-6 mb-4">
+                                <div class="plant-image-card">
+                                    <img src="{{ image.image.url }}" 
+                                         class="img-fluid rounded" 
+                                         alt="{{ image.alt_text }}"
+                                         loading="lazy">
+                                    <div class="image-caption">
+                                        {{ image.caption }}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </article>
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4 col-md-12">
+                <aside class="sidebar">
+                    <div class="plant-thumbnail mb-4">
+                        <img src="{{ post.thumbnail.url }}" 
+                             class="img-fluid rounded" 
+                             alt="{{ post.title }} thumbnail">
+                    </div>
+                    
+                    <div class="widget recent-posts-widget">
+                        <h3>More Plant Care Guides</h3>
+                        <ul class="list-unstyled">
+                            {% for recent_post in posts|slice:":5" %}
+                            <li class="media mb-3">
+                                <img src="{{ recent_post.thumbnail.url }}" 
+                                     class="mr-3" 
+                                     width="60" 
+                                     alt="{{ recent_post.title }} thumbnail">
+                                <div class="media-body">
+                                    <h6 class="mt-0 mb-1">
+                                        <a href="{% url 'blog:post_detail' recent_post.slug %}">
+                                            {{ recent_post.title }}
+                                        </a>
+                                    </h6>
+                                    <small>{{ recent_post.created_at|date:"M d, Y" }}</small>
+                                </div>
+                            </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

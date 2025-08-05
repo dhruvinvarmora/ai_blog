@@ -1,0 +1,172 @@
+from django.db import models
+from django.utils.text import slugify
+from django.utils import timezone
+import os
+
+# Create your models here.
+from django.db import models
+
+class Category(models.Model):
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True)
+    description = models.TextField(blank=True)
+    
+    class Meta:
+        verbose_name_plural = "Categories"
+    
+    def __str__(self):
+        return self.name
+
+class Tag(models.Model):
+    name = models.CharField(max_length=50)
+    slug = models.SlugField(unique=True)
+    
+    def __str__(self):
+        return self.name
+
+def post_image_path(instance, filename):
+    """Generate file path for post images"""
+    post_slug = instance.post.slug
+    return f'posts/{post_slug}/{filename}'
+
+def post_thumbnail_path(instance, filename):
+    """Generate file path for post thumbnails"""
+    post_slug = instance.slug
+    return f'posts/{post_slug}/thumbnail/{filename}'
+
+def post_featured_path(instance, filename):
+    """Generate file path for post featured images"""
+    post_slug = instance.slug
+    return f'posts/{post_slug}/featured/{filename}'
+
+class PostImage(models.Model):
+    post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='images')
+    image = models.ImageField(upload_to=post_image_path, blank=True, null=True)
+    image_url = models.URLField(blank=True)  # Keep for external URLs
+    caption = models.CharField(max_length=200, blank=True)
+    alt_text = models.CharField(max_length=200, blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_downloaded = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.post.title} - Image {self.order}"
+    
+    @property
+    def image_display(self):
+        """Return local image if available, otherwise URL"""
+        if self.image and self.is_downloaded:
+            return self.image.url
+        return self.image_url
+
+class Post(models.Model):
+    CATEGORY_CHOICES = [
+        ('plants', 'Plants'),
+        ('flowers', 'Flowers'),
+        ('fruits', 'Fruits'),
+        ('gardening', 'Gardening Tips'),
+        ('care', 'Plant Care'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    content = models.TextField()
+    summary = models.TextField()
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='plants')
+    tags = models.ManyToManyField(Tag, blank=True)
+    destination_name = models.CharField(max_length=100, blank=True)
+    country = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    published_at = models.DateTimeField(default=timezone.now)
+    
+    # Local image storage
+    thumbnail = models.ImageField(upload_to=post_thumbnail_path, blank=True, null=True)
+    featured_image = models.ImageField(upload_to=post_featured_path, blank=True, null=True)
+    
+    # Keep URL fields for fallback
+    thumbnail_url = models.URLField(blank=True)
+    featured_image_url = models.URLField(blank=True)
+    video_url = models.URLField(blank=True)
+    
+    is_featured = models.BooleanField(default=False)
+    is_published = models.BooleanField(default=True)
+    view_count = models.PositiveIntegerField(default=0)
+    
+    # Plant/Fruit specific fields
+    scientific_name = models.CharField(max_length=200, blank=True)
+    family = models.CharField(max_length=100, blank=True)
+    care_difficulty = models.CharField(max_length=20, choices=[
+        ('easy', 'Easy'),
+        ('medium', 'Medium'),
+        ('hard', 'Hard'),
+    ], blank=True)
+    watering_needs = models.CharField(max_length=50, blank=True)
+    sunlight_requirements = models.CharField(max_length=50, blank=True)
+    growth_rate = models.CharField(max_length=50, blank=True)
+    max_height = models.CharField(max_length=50, blank=True)
+    blooming_season = models.CharField(max_length=100, blank=True)
+    harvest_time = models.CharField(max_length=100, blank=True)
+    
+    class Meta:
+        ordering = ['-published_at']
+    
+    def __str__(self):
+        return self.title
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title)
+        super().save(*args, **kwargs)
+    
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('blog:post_detail', kwargs={'slug': self.slug})
+    
+    @property
+    def thumbnail_display(self):
+        """Return local thumbnail if available, otherwise URL"""
+        if self.thumbnail:
+            return self.thumbnail.url
+        return self.thumbnail_url
+    
+    @property
+    def featured_image_display(self):
+        """Return local featured image if available, otherwise URL"""
+        if self.featured_image:
+            return self.featured_image.url
+        return self.featured_image_url
+    
+    @property
+    def main_images(self):
+        """Get the main images for the post (excluding thumbnail and featured)"""
+        return self.images.filter(order__gte=1).order_by('order')
+    
+    @property
+    def all_images(self):
+        """Get all images including thumbnail and featured"""
+        images = []
+        if self.featured_image_display:
+            images.append({
+                'url': self.featured_image_display,
+                'caption': 'Featured Image',
+                'alt_text': f'Featured image of {self.title}',
+                'order': 0
+            })
+        if self.thumbnail_display:
+            images.append({
+                'url': self.thumbnail_display,
+                'caption': 'Thumbnail',
+                'alt_text': f'Thumbnail of {self.title}',
+                'order': -1
+            })
+        for img in self.images.all():
+            images.append({
+                'url': img.image_display,
+                'caption': img.caption,
+                'alt_text': img.alt_text,
+                'order': img.order
+            })
+        return sorted(images, key=lambda x: x['order'])
