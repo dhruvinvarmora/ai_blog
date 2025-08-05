@@ -26,7 +26,7 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-2kzp+&25bygbxe79%lp08
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['https://greenthumb-h41p.onrender.com','localhost']
 from decouple import config
 
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
