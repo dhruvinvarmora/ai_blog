@@ -14,6 +14,7 @@ import os
 from pathlib import Path
 import os
 import dj_database_url
+from decouple import config
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -27,7 +28,6 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-2kzp+&25bygbxe79%lp08
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = ['greenthumb.onrender.com', 'localhost']
-from decouple import config
 
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 # Application definition
