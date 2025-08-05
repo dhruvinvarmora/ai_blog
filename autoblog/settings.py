@@ -27,7 +27,12 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-2kzp+&25bygbxe79%lp08
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = config('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='', cast=Csv())
+RENDER_EXTERNAL_HOSTNAME = config('RENDER_EXTERNAL_HOSTNAME')
+
+ALLOWED_HOSTS = []
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS.extend(['localhost', '127.0.0.1'])
 
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
 # Application definition
