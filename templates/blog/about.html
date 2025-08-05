@@ -1,30 +1,93 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Clickaholic - About{% endblock %}
+{% block title %}GreenThumb - About Our Plant Blog{% endblock %}
 
 {% block content %}
-<!-- Blog-Section -->
+<!-- About-Section -->
 <div class="about-page">
     <div class="container">
         <div class="row">
             <div class="col-sm-12">
-                <h3>About Us</h3>
+                <h3>About GreenThumb</h3>
                 <figure class="figure">
-                    <img src="{% static 'images/banner-image-1.jpg' %}" alt="about">
+                    <img src="{% static 'images/contact-us-banner-image.jpg' %}" alt="Plant enthusiast caring for indoor plants" class="img-fluid">
                 </figure>
             </div>
             <div class="col-sm-12">
-                <p>Welcome to my <a href="{% url 'blog:blog' %}">personal travel</a> blog, i love to travel the globe, i have been to so many beautiful places and met interesting people the world, this website is my mirror of life. <br> Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful places and met interes Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful places and met interesting people around the world, this website is my mirror of life. </p>
+                <p>Welcome to <a href="{% url 'blog:blog' %}">GreenThumb</a>, your trusted source for practical plant care advice. What began as a personal passion for houseplants has grown into a comprehensive resource for plant lovers at all experience levels.</p>
 
-                <p>Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful...e world, this website is my mirror of life. <br> Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful...</p>
-                <p> Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful places and met interesting people the world, this website is my mirror of life. <br> Welcome to my personal travel blog, i love to travel the globe, i have been to so many travel the globe, i have been to so many beautiful places and met interesting people around the world, this website is my mirror of life.
-                </p>
-                <p>Welcome to my <a href="{% url 'blog:blog' %}">personal travel</a> blog, i love to travel the globe, i have been to so many beautiful...e world, this website is my mirror of life. <br> Welcome to my personal travel blog, i love to travel the globe, i have been to so many beautiful...</p>
+                <p>Our journey started in a small apartment filled with struggling plants. Through years of experimentation, research, and learning from experts, we've cultivated (pun intended!) the knowledge we now share with our community.</p>
+
+                <h4>Our Mission</h4>
+                <p>We believe everyone can develop a green thumb with the right guidance. Our mission is to:</p>
+                <ul>
+                    <li>Demystify plant care with science-based, practical advice</li>
+                    <li>Help beginners avoid common mistakes</li>
+                    <li>Provide advanced techniques for experienced plant parents</li>
+                    <li>Build a community of plant enthusiasts</li>
+                </ul>
+
+                <h4>What We Offer</h4>
+                <p>On GreenThumb, you'll find:</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="about-feature">
+                            <i class="fas fa-seedling"></i>
+                            <h5>Plant Care Guides</h5>
+                            <p>Detailed instructions for specific plant varieties, from common houseplants to exotic specimens.</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="about-feature">
+                            <i class="fas fa-tint"></i>
+                            <h5>Seasonal Advice</h5>
+                            <p>Timely tips for adjusting care routines throughout the year.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <h4>Our Team</h4>
+                <p>GreenThumb is maintained by a small team of horticulture enthusiasts including:</p>
+                
+
+                <p class="cta-text">Join thousands of plant lovers who have transformed their spaces with our guidance. <a href="{% url 'blog:blog' %}" class="btn btn-success">Explore Our Plant Guides</a></p>
             </div>
         </div>
     </div>
 </div>
-<!-- Support section Ended -->
-<!--/.Portfolio-Section -->
+
+<style>
+    .about-feature {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    .about-feature i {
+        font-size: 2rem;
+        color: #28a745;
+        margin-bottom: 15px;
+    }
+    .team-member {
+        text-align: center;
+        margin: 30px 0;
+    }
+    .team-member img {
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        margin-bottom: 15px;
+    }
+    .title {
+        color: #28a745;
+        font-weight: bold;
+    }
+    .cta-text {
+        text-align: center;
+        margin-top: 40px;
+        font-size: 1.2rem;
+    }
+</style>
 {% endblock %}

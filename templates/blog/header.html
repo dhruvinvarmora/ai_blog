@@ -3,7 +3,14 @@
 <nav class="navbar navbar-expand-lg navbar-dark cyan fixed-top">
     <div class="container">
         <a class="navbar-brand" href="{% url 'blog:home' %}">
-        <img src="{% static 'images/nav-logo.png' %}" alt="nav-logo">
+        <a class="navbar-brand" href="{% url 'blog:home' %}">
+            <span style="display: inline-flex; align-items: center;">
+                <svg width="30" height="30" viewBox="0 0 24 24" style="margin-right: 10px;">
+                <path fill="#28a745" d="M12,2C13.1,2 14,2.9 14,4C14,5.1 13.1,6 12,6C10.9,6 10,5.1 10,4C10,2.9 10.9,2 12,2M15.5,8C16.3,8 17,8.7 17,9.5C17,10.3 16.3,11 15.5,11C14.7,11 14,10.3 14,9.5C14,8.7 14.7,8 15.5,8M8.5,8C9.3,8 10,8.7 10,9.5C10,10.3 9.3,11 8.5,11C7.7,11 7,10.3 7,9.5C7,8.7 7.7,8 8.5,8M12,11.5C13.7,11.5 15,10.2 15,8.5C15,6.8 13.7,5.5 12,5.5C10.3,5.5 9,6.8 9,8.5C9,10.2 10.3,11.5 12,11.5M19,17.5V19H5V17.5C5,15.6 8.1,14 12,14C15.9,14 19,15.6 19,17.5Z"/>
+                </svg>
+                <span style="font-family: 'Poppins', sans-serif; font-weight: 600; color: #333;">GreenThumb</span>
+            </span>
+            </a>
         </a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent-4" aria-controls="navbarSupportedContent-4" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>

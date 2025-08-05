@@ -185,3 +185,20 @@ class Post(models.Model):
     def get_images_by_type(self):
         """Get images organized by their type"""
         return {img.image_type: img for img in self.images.all().order_by('order')}
+    
+
+class ContactMessage(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    subject = models.CharField(max_length=200)
+    message = models.TextField()
+    created_at = models.DateTimeField(default=timezone.now)
+    is_responded = models.BooleanField(default=False)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Contact Message'
+        verbose_name_plural = 'Contact Messages'
+    
+    def __str__(self):
+        return f"Message from {self.name} - {self.subject}"

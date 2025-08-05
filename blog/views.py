@@ -1,8 +1,12 @@
 from django.shortcuts import render, get_object_or_404
-from django.views.generic import ListView, DetailView, TemplateView
+from django.views.generic import ListView, DetailView, TemplateView,FormView
 from django.db.models import Q
 from django.utils import timezone
-from .models import Post, Category, Tag
+
+from blog.forms import ContactForm
+from .models import Post, Category, Tag,ContactMessage
+from django.contrib import messages
+from django.urls import reverse_lazy
 
 class PostListView(ListView):
     model = Post
@@ -136,15 +140,18 @@ class AboutView(TemplateView):
         return context
 
 
-class GalleryView(TemplateView):
+class GalleryView(ListView):
     template_name = "blog/gallery.html"
+    context_object_name = 'posts'
+    paginate_by = 12  
+    
+    def get_queryset(self):
+        return Post.objects.filter(
+            is_published=True
+        ).prefetch_related('images').order_by('-published_at')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['posts'] = Post.objects.filter(
-            is_published=True
-        ).order_by('-published_at')
-        context['categories'] = Category.objects.all()
         return context
 
 
@@ -179,3 +186,21 @@ class ContactView(TemplateView):
         context = super().get_context_data(**kwargs)
         context['categories'] = Category.objects.all()
         return context
+
+
+class ContactView(FormView):
+    template_name = 'blog/contact.html'
+    form_class = ContactForm  # Specify the form class
+    success_url = reverse_lazy('blog:contact')
+    
+    def form_valid(self, form):
+        # Save the contact message to database
+        ContactMessage.objects.create(
+            name=form.cleaned_data['name'],
+            email=form.cleaned_data['email'],
+            subject=form.cleaned_data['subject'],
+            message=form.cleaned_data['message']
+        )
+        
+        messages.success(self.request, 'Thank you for your message! We will get back to you soon.')
+        return super().form_valid(form)
