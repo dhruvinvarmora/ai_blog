@@ -202,3 +202,7 @@ class ContactMessage(models.Model):
     
     def __str__(self):
         return f"Message from {self.name} - {self.subject}"
+
+class PostScheduler(models.Model):
+    last_run = models.DateTimeField(auto_now=True)
+    is_running = models.BooleanField(default=False)    
