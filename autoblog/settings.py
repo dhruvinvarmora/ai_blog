@@ -12,7 +12,8 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
-
+import os
+import dj_database_url
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -24,9 +25,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-2kzp+&25bygbxe79%lp08i%x&m($8=wg@bg3!7z$+cwx62k-rf')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = ['https://greenthumb-h41p.onrender.com','localhost']
+DEBUG = config('DEBUG', 'False') == 'True'
+ALLOWED_HOSTS = ['greenthumb.onrender.com', 'localhost']
 from decouple import config
 
 OPENAI_API_KEY = config('OPENAI_API_KEY', default='')
@@ -77,24 +77,12 @@ WSGI_APPLICATION = 'autoblog.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-import dj_database_url
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': config('DB_NAME', default=''),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default=''),
-        'PORT': config('DB_PORT', default=''),
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL'),
+        conn_max_age=600
+    )
 }
-
-# Optionally override with DATABASE_URL if set
-DATABASES['default'] = dj_database_url.config(
-    default=os.getenv('DATABASE_URL'),
-    conn_max_age=600
-) or DATABASES['default']
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
