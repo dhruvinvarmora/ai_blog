@@ -2,12 +2,16 @@ from django.shortcuts import render, get_object_or_404
 from django.views.generic import ListView, DetailView, TemplateView,FormView
 from django.db.models import Q
 from django.utils import timezone
-
 from blog.forms import ContactForm
 from .models import Post, Category, Tag,ContactMessage
 from django.contrib import messages
 from django.urls import reverse_lazy
-
+from django.contrib.admin.views.decorators import staff_member_required
+from django.shortcuts import render, redirect
+from .management.commands.generate_post import Command
+from django.contrib import messages
+from django.utils.decorators import method_decorator
+from django.views import View
 class PostListView(ListView):
     model = Post
     template_name = "blog/index.html"
@@ -47,14 +51,19 @@ class PostDetailView(DetailView):
         post.view_count += 1
         post.save(update_fields=['view_count'])
         
-        # Get related posts
+        # Get related posts (using the same category)
         related_posts = Post.objects.filter(
             is_published=True,
             category=post.category
-        ).exclude(id=post.id).order_by('-published_at')[:3]
+        ).exclude(id=post.id).order_by('-published_at')[:5]
         
-        context['related_posts'] = related_posts
-        context['categories'] = Category.objects.all()
+        # Get all categories for sidebar
+        categories = Category.objects.all()
+        
+        context.update({
+            'related_posts': related_posts,
+            'categories': categories,
+        })
         return context
 
 
@@ -204,3 +213,34 @@ class ContactView(FormView):
         
         messages.success(self.request, 'Thank you for your message! We will get back to you soon.')
         return super().form_valid(form)
+    
+
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class GeneratePostView(View):
+    """
+    Admin-only view for manually generating blog posts
+    """
+    template_name = 'admin/generate_post.html'
+    
+    def get(self, request, *args, **kwargs):
+        """Handle GET requests - show the generation form"""
+        return render(request, self.template_name)
+    
+    def post(self, request, *args, **kwargs):
+        """Handle POST requests - process the generation"""
+        try:
+            cmd = Command()
+            category = request.POST.get('category')
+            
+            # Call the management command with form data
+            cmd.handle(category=category or None)
+            
+            messages.success(request, '🌿 Post generated successfully!')
+        except Exception as e:
+            messages.error(request, f'❌ Error: {str(e)}')
+            # For debugging in admin (remove in production)
+            messages.info(request, f'Debug: {repr(e)}')
+        
+        return redirect('blog:home')
