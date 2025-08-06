@@ -12,6 +12,9 @@ from .management.commands.generate_post import Command
 from django.contrib import messages
 from django.utils.decorators import method_decorator
 from django.views import View
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
 class PostListView(ListView):
     model = Post
     template_name = "blog/index.html"
@@ -40,8 +43,12 @@ class PostDetailView(DetailView):
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
     
+    @method_decorator(cache_page(60 * 15))  # Cache for 15 minutes
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
     def get_queryset(self):
-        return Post.objects.filter(is_published=True)
+        return Post.objects.filter(is_published=True).prefetch_related('images')
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -51,18 +58,21 @@ class PostDetailView(DetailView):
         post.view_count += 1
         post.save(update_fields=['view_count'])
         
-        # Get related posts (using the same category)
-        related_posts = Post.objects.filter(
-            is_published=True,
-            category=post.category
-        ).exclude(id=post.id).order_by('-published_at')[:5]
+        # Get related posts with cache
+        cache_key = f'related_posts_{post.id}'
+        related_posts = cache.get(cache_key)
         
-        # Get all categories for sidebar
-        categories = Category.objects.all()
+        if not related_posts:
+            related_posts = Post.objects.filter(
+                is_published=True,
+                category=post.category
+            ).exclude(id=post.id).order_by('-published_at')[:5]
+            cache.set(cache_key, related_posts, 60 * 60)  # Cache for 1 hour
         
         context.update({
             'related_posts': related_posts,
-            'categories': categories,
+            'meta_description': post.summary,
+            'meta_image': post.featured_image_url,
         })
         return context
 
@@ -188,13 +198,6 @@ class BlogView(ListView):
         return context
 
 
-class ContactView(TemplateView):
-    template_name = "blog/contact.html"
-    
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.all()
-        return context
 
 
 class ContactView(FormView):

@@ -41,7 +41,9 @@ def slugify(text):
 
 class Command(BaseCommand):
     help = "Generate automated daily blog posts about plants, flowers, and fruits with Cloudinary image storage"
-
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.verbose = False  # Initialize verbose attribute
     def add_arguments(self, parser):
         parser.add_argument(
             '--category',
@@ -112,24 +114,14 @@ class Command(BaseCommand):
             response.raise_for_status()
             data = response.json()
             plant_images = []
-            has_plant_keyword = any(keyword in description for keyword in plant_keywords)
-            has_plant_tag = any(keyword in tags for keyword in plant_keywords)
             for photo in data.get('results', []):
-                if not (has_plant_keyword or has_plant_tag):
-                    # Use the new log_debug method instead of print
-                    self.log_debug(f"⚠️ Skipping non-plant image: {photo['id']}")
-                    continue
-                # Skip if not plant-related based on tags or description
-                tags = [tag['title'].lower() for tag in photo.get('tags', [])]
-                description = (photo.get('description') or photo.get('alt_description') or "").lower()
-                
-                # Check for plant-related keywords
                 plant_keywords = {'plant', 'foliage', 'leaf', 'flower', 'fruit', 'tree', 
                                 'botanical', 'garden', 'nature', 'green', 'organic', 'grow'}
-                
+                tags = [tag['title'].lower() for tag in photo.get('tags', [])]
+                description = (photo.get('description') or photo.get('alt_description') or "").lower()
+
                 has_plant_keyword = any(keyword in description for keyword in plant_keywords)
                 has_plant_tag = any(keyword in tags for keyword in plant_keywords)
-                
                 if not (has_plant_keyword or has_plant_tag):
                     self.log_debug(f"⚠️ Skipping non-plant image: {photo['id']}")
                     continue

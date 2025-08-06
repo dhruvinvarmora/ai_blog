@@ -3,6 +3,17 @@
 {% load blog_extras %}
 
 {% block content %}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "{{ post.title }}",
+  "description": "{{ post.summary }}",
+  "datePublished": "{{ post.created_at|date:'c' }}",
+  "image": "{{ post.featured_image_url }}"
+}
+</script>
+
 <section class="blog-post-detail">
     <div class="container">
         <div class="row">
@@ -13,20 +24,18 @@
                         <h1>{{ post.title }}</h1>
                         <div class="post-meta">
                             <span class="post-date">{{ post.created_at|date:"F d, Y" }}</span>
+                            <span class="post-views">{{ post.view_count }} views</span>
                         </div>
                         <div class="featured-image">
-                        {% if post.featured_image %}
-                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }} plant care" loading="lazy">
-                        {% elif post.featured_image_url %}
-                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }} plant care" loading="lazy">
-                        {% else %}
-                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
-                        {% endif %}
+                            <img src="{{ post.featured_image_display }}" 
+                                class="img-fluid rounded" 
+                                alt="{{ post.title }}"
+                                loading="lazy">
                         </div>
                     </header>
                     
                     <!-- Main Content -->
-                    <div class="post-content">
+                   <div class="post-content">
                         {{ post.content|insert_images:post|safe }}
                     </div>
 
@@ -37,20 +46,16 @@
                             {% for image in post.images.all %}
                             <div class="col-md-6 mb-4">
                                 <div class="plant-image-card">
-                                    {% if image.image %}
-                                        <img src="{{ image.image.url }}" 
-                                             class="img-fluid rounded" 
-                                             alt="{{ image.alt_text }}"
-                                             loading="lazy">
-                                    {% elif image.image_url %}
-                                        <img src="{{ image.image_url }}" 
-                                             class="img-fluid rounded" 
-                                             alt="{{ image.alt_text }}"
-                                             loading="lazy">
-                                    {% endif %}
+                                   <img src="{{ recent_post.thumbnail_display }}" 
+                                        class="mr-3" 
+                                        width="60" 
+                                        alt="{{ recent_post.title }}"
+                                        loading="lazy">
+                                    {% if image.caption %}
                                     <div class="image-caption">
                                         {{ image.caption }}
                                     </div>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% endfor %}
@@ -63,15 +68,10 @@
             <div class="col-lg-4 col-md-12">
                 <aside class="sidebar">
                     <div class="plant-thumbnail mb-4">
-                        {% if post.thumbnail %}
-                            <img src="{{ post.thumbnail.url }}" 
-                                 class="img-fluid rounded" 
-                                 alt="{{ post.title }} thumbnail">
-                        {% elif post.thumbnail_url %}
-                            <img src="{{ post.thumbnail_url }}" 
-                                 class="img-fluid rounded" 
-                                 alt="{{ post.title }} thumbnail">
-                        {% endif %}
+                        <img src="{{ post.thumbnail_display }}" 
+                            class="img-fluid rounded" 
+                            alt="{{ post.title }}"
+                            loading="lazy">
                     </div>
                     
                     <div class="widget recent-posts-widget">
@@ -79,17 +79,11 @@
                         <ul class="list-unstyled">
                             {% for recent_post in related_posts %}
                             <li class="media mb-3">
-                                {% if recent_post.thumbnail %}
-                                    <img src="{{ recent_post.thumbnail.url }}" 
-                                         class="mr-3" 
-                                         width="60" 
-                                         alt="{{ recent_post.title }} thumbnail">
-                                {% elif recent_post.thumbnail_url %}
-                                    <img src="{{ recent_post.thumbnail_url }}" 
-                                         class="mr-3" 
-                                         width="60" 
-                                         alt="{{ recent_post.title }} thumbnail">
-                                {% endif %}
+                                <img src="{{ recent_post.get_thumbnail_url }}" 
+                                     class="mr-3" 
+                                     width="60" 
+                                     alt="{{ recent_post.title }}"
+                                     loading="lazy">
                                 <div class="media-body">
                                     <h6 class="mt-0 mb-1">
                                         <a href="{% url 'blog:post_detail' recent_post.slug %}">

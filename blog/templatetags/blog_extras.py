@@ -74,36 +74,43 @@ def add_section_images(content, images):
     
     return ''.join(result)    
 
-@register.filter
+@register.filter(name='insert_images', is_safe=True)
 def insert_images(content, post):
     """
-    Replace [IMAGE:type] placeholders with actual images
-    and add section-specific images
+    Replace [IMAGE:type] tags with actual images from the post
     """
-    # First handle the explicit placeholders
-    images_by_type = {img.image_type: img for img in post.images.all()}
-    for image_type, image in images_by_type.items():
-        placeholder = f'[IMAGE:{image_type}]'
-        if placeholder in content:
-            img_html = f"""
-            <div class="post-image mb-4 text-center">
-                <img src="{image.image.url}" 
-                     class="img-fluid rounded shadow" 
-                     alt="{image.alt_text}"
-                     style="max-height: 500px;">
-                <div class="image-caption mt-2 fst-italic">
-                    {image.caption}
+    if not post or not hasattr(post, 'images'):
+        return content
+    try:
+        # Get all images organized by type
+        images_by_type = {}
+        for image in post.images.all():
+            if image.image_type not in images_by_type:
+                images_by_type[image.image_type] = image
+        
+        # Replace each image tag
+        for image_type in ['overview', 'care', 'closeup', 'indoor', 'healthy', 'decor']:
+            pattern = rf'\[IMAGE:{image_type}\]'
+            if image_type in images_by_type:
+                image = images_by_type[image_type]
+                img_tag = f"""
+                <div class="post-image">
+                    <img src="{image.image_url if image.image_url else image.image.url}" 
+                        class="img-fluid rounded" 
+                        alt="{image.alt_text or ''}"
+                        loading="lazy">
+                    {f'<div class="image-caption">{image.caption}</div>' if image.caption else ''}
                 </div>
-            </div>
-            """
-            content = content.replace(placeholder, img_html)
-    
-    # Then add images between sections
-    sections = split_into_sections(content)
-    if sections and post.images.count() > 0:
-        content = insert_section_images(sections, post.images.all())
-    
-    return mark_safe(content)
+                """
+                content = re.sub(pattern, img_tag, content)
+            else:
+                # Remove the tag if no image found
+                content = re.sub(pattern, '', content)
+        
+        return mark_safe(content)
+    except Exception as e:
+        return content
+
 
 def split_into_sections(content):
     """Split content by h2 headings"""
