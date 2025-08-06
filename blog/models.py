@@ -5,6 +5,7 @@ import os
 from cloudinary.models import CloudinaryField
 # Create your models here.
 from django.db import models
+from decouple import config
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
@@ -133,10 +134,11 @@ class Post(models.Model):
 
         if not self.thumbnail and not self.thumbnail_url:
             # Use a default placeholder
-            self.thumbnail_url = "https://res.cloudinary.com/YOUR_CLOUD/image/upload/v1/plant-placeholder.jpg"
+            cloudinary_cloud_name = config("CLOUDINARY_CLOUD_NAME", default="demo")
+            self.thumbnail_url = f"https://res.cloudinary.com/{cloudinary_cloud_name}/image/upload/v1/plant-placeholder.jpg"
         
         if not self.featured_image and not self.featured_image_url:
-            self.featured_image_url = "https://res.cloudinary.com/YOUR_CLOUD/image/upload/v1/plant-featured-placeholder.jpg"
+            self.featured_image_url = f"https://res.cloudinary.com/{cloudinary_cloud_name}/image/upload/v1/plant-featured-placeholder.jpg"
         
         super().save(*args, **kwargs)
     
