@@ -6,6 +6,7 @@ from cloudinary.models import CloudinaryField
 # Create your models here.
 from django.db import models
 from decouple import config
+from django.templatetags.static import static
 
 class Category(models.Model):
     name = models.CharField(max_length=255)
@@ -73,6 +74,17 @@ class PostImage(models.Model):
             return self.image.url
         return self.image_url
 
+    @property
+    def image_url_or_default(self):
+        if self.image_url:
+            return self.image_url
+        elif self.image:
+            return self.image.url
+        return static('images/default-plant.jpg')
+    
+    @property
+    def has_image(self):
+        return bool(self.image or self.image_url)
 class Post(models.Model):
     CATEGORY_CHOICES = [
         ('plants', 'Plants'),
@@ -146,19 +158,27 @@ class Post(models.Model):
         from django.urls import reverse
         return reverse('blog:post_detail', kwargs={'slug': self.slug})
     
+    def get_image_by_type(self, image_type):
+        """Get the first image of specified type"""
+        try:
+            return self.images.filter(image_type=image_type).first()
+        except:
+            return None
+    
+    def get_image_url_by_type(self, image_type):
+        """Get URL for image of specified type"""
+        image = self.get_image_by_type(image_type)
+        if image:
+            return image.image_url if image.image_url else (image.image.url if image.image else None)
+        return None
     @property
     def thumbnail_display(self):
-        """Return local thumbnail if available, otherwise URL"""
+        """Return local thumbnail if available, otherwise URL or default"""
         if self.thumbnail:
             return self.thumbnail.url
-        return self.thumbnail_url
-    
-    @property
-    def featured_image_display(self):
-        """Return local featured image if available, otherwise URL"""
-        if self.featured_image:
-            return self.featured_image.url
-        return self.featured_image_url
+        elif self.thumbnail_url:
+            return self.thumbnail_url
+        return static('images/banner-image-6.jpg')
     
     @property
     def main_images(self):
@@ -195,7 +215,14 @@ class Post(models.Model):
     def get_images_by_type(self):
         """Get images organized by their type"""
         return {img.image_type: img for img in self.images.all().order_by('order')}
-    
+    @property
+    def featured_image_display(self):
+        """Return local featured image if available, otherwise URL or default"""
+        if self.featured_image:
+            return self.featured_image.url
+        elif self.featured_image_url:
+            return self.featured_image_url
+        return static('images/contact-us-banner-image.jpg')
 
 class ContactMessage(models.Model):
     name = models.CharField(max_length=255)
