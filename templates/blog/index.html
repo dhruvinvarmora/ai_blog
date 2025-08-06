@@ -9,46 +9,61 @@
     <!--Slides-->
     <div class="carousel-inner" role="listbox">
         <div class="carousel-item active">
-            <img class="d-block w-100" src="{% static 'images/plant-banner-1.jpg' %}" alt="Indoor Plants Collection">
+            <img class="d-block w-100" 
+                 src="{% static 'images/plant-banner-1.jpg' %}" 
+                 alt="Indoor Plants Collection"
+                 loading="lazy">
             <div class="gradient"></div>
             <div class="carousel-caption">
                 <h1>Beautiful Indoor Plants Collection</h1>
                 <p class="lead">Discover the best plants for your home environment</p>
-                {% comment %} <a class="btn btn-primary" href="{% url 'blog:category' 'plants' %}"><span>Explore Plants</span></a> {% endcomment %}
             </div>
         </div>
         <div class="carousel-item">
-            <img class="d-block w-100" src="{% static 'images/flower-banner.jpg' %}" alt="Flowering Plants">
+            <img class="d-block w-100" 
+                 src="{% static 'images/flower-banner.jpg' %}" 
+                 alt="Flowering Plants"
+                 loading="lazy">
             <div class="gradient"></div>
             <div class="carousel-caption">
                 <h1>Blooming Flower Care Guide</h1>
                 <p class="lead">Learn how to keep your flowers thriving all year round</p>
-                {% comment %} <a class="btn btn-primary" href="{% url 'blog:category' 'flowers' %}"><span>View Flowers</span></a> {% endcomment %}
             </div>
         </div>
         <div class="carousel-item">
-            <img class="d-block w-100" src="{% static 'images/fruit-banner.jpg' %}" alt="Fruit Trees">
+            <img class="d-block w-100" 
+                 src="{% static 'images/fruit-banner.jpg' %}" 
+                 alt="Fruit Trees"
+                 loading="lazy">
             <div class="gradient"></div>
             <div class="carousel-caption">
                 <h1>Homegrown Fruit Trees</h1>
                 <p class="lead">Grow your own delicious fruits at home</p>
-                {% comment %} <a class="btn btn-primary" href="{% url 'blog:category' 'fruits' %}"><span>Learn More</span></a> {% endcomment %}
             </div>
         </div>
     </div>
     <!--/.Slides-->
-    <!--/.Controls-->
+    <!--Controls-->
     <ol class="carousel-indicators">
         <li data-target="#carousel-thumb" data-slide-to="0" class="active">
-            <img class="d-block w-100" src="{% static 'images/plant-banner-1-thumb.jpg' %}" class="img-fluid">
+            <img src="{% static 'images/plant-banner-1-thumb.jpg' %}" 
+                 class="img-fluid"
+                 alt="Indoor Plants Thumbnail"
+                 loading="lazy">
             <span>Indoor Plants</span>
         </li>
         <li data-target="#carousel-thumb" data-slide-to="1">
-            <img class="d-block w-100" src="{% static 'images/flower-banner-thumb.jpg' %}" class="img-fluid">
+            <img src="{% static 'images/flower-banner-thumb.jpg' %}" 
+                 class="img-fluid"
+                 alt="Flowering Plants Thumbnail"
+                 loading="lazy">
             <span>Flowering Plants</span>
         </li>
         <li data-target="#carousel-thumb" data-slide-to="2">
-            <img class="d-block w-100" src="{% static 'images/fruit-banner-thumb.jpg' %}" class="img-fluid">
+            <img src="{% static 'images/fruit-banner-thumb.jpg' %}" 
+                 class="img-fluid"
+                 alt="Fruit Trees Thumbnail"
+                 loading="lazy">
             <span>Fruit Trees</span>
         </li>
     </ol>
@@ -65,14 +80,24 @@
                     {% for post in posts|slice:":3" %}
                     <a href="{% url 'blog:post_detail' post.slug %}" class="col-xl-{% cycle '6' '3' '3' %} col-md-4 box-{% cycle '1' '2' '2' %}">
                         {% if post.featured_image %}
-                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                           <img src="{{ post.featured_image.url }}" 
+                                class="img-fluid" 
+                                alt="{{ post.title }}"
+                                loading="lazy">
                         {% elif post.featured_image_url %}
-                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }}">
+                           <img src="{{ post.featured_image_url }}" 
+                                class="img-fluid" 
+                                alt="{{ post.title }}"
+                                loading="lazy">
                         {% else %}
-                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
+                          <img src="{% static 'images/placeholder.jpg' %}" 
+                               alt="No Image Available"
+                               loading="lazy">
                         {% endif %}
                         <div class="overlay">
-                            <img src="{% static 'images/comment.png' %}" alt="plus-icon">
+                            <img src="{% static 'images/comment.png' %}" 
+                                 alt="plus-icon"
+                                 loading="lazy">
                             <div class="text">{{ post.title }} <span>{{ post.get_category_display }}</span></div>
                             <div class="count">{{ post.view_count }}</div>
                         </div>
@@ -83,14 +108,24 @@
                     {% for post in posts|slice:"3:6" %}
                     <a href="{% url 'blog:post_detail' post.slug %}" class="col-xl-{% cycle '3' '3' '6' %} col-md-4 box-{% cycle '2' '2' '1' %}">
                         {% if post.featured_image %}
-                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                           <img src="{{ post.featured_image.url }}" 
+                                class="img-fluid" 
+                                alt="{{ post.title }}"
+                                loading="lazy">
                         {% elif post.featured_image_url %}
-                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }}">
+                           <img src="{{ post.featured_image_url }}" 
+                                class="img-fluid" 
+                                alt="{{ post.title }}"
+                                loading="lazy">
                         {% else %}
-                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
+                          <img src="{% static 'images/placeholder.jpg' %}" 
+                               alt="No Image Available"
+                               loading="lazy">
                         {% endif %}
                         <div class="overlay">
-                            <img src="{% static 'images/comment.png' %}" alt="plus-icon">
+                            <img src="{% static 'images/comment.png' %}" 
+                                 alt="plus-icon"
+                                 loading="lazy">
                             <div class="text">{{ post.title }} <span>{{ post.get_category_display }}</span></div>
                             <div class="count">{{ post.view_count }}</div>
                         </div>
@@ -109,14 +144,31 @@
             <div class="col-lg-6 col-md-12 left-side">
                 <h2>Recent Plant Care Articles</h2>
                 {% for post in posts|slice:":4" %}
-                <div class="row">
+                <div class="row mb-4">
                     <div class="col-md-6">
                         <figure class="figure">
                             <a href="{% url 'blog:post_detail' post.slug %}">
-                                <img src="{{ post.thumbnail.url }}" class="figure-img img-fluid" alt="{{ post.title }}">
+                                {% if post.thumbnail %}
+                                <img src="{{ post.thumbnail.url }}" 
+                                     class="figure-img img-fluid" 
+                                     alt="{{ post.title }}"
+                                     loading="lazy">
+                                {% elif post.thumbnail_url %}
+                                <img src="{{ post.thumbnail_url }}" 
+                                     class="figure-img img-fluid" 
+                                     alt="{{ post.title }}"
+                                     loading="lazy">
+                                {% else %}
+                                <img src="{% static 'images/placeholder.jpg' %}" 
+                                     class="figure-img img-fluid" 
+                                     alt="No Thumbnail Available"
+                                     loading="lazy">
+                                {% endif %}
                             </a>
                             <figcaption class="figure-caption">
-                                <img src="{% static 'images/comment.png' %}" alt="comment icon">
+                                <img src="{% static 'images/comment.png' %}" 
+                                     alt="comment icon"
+                                     loading="lazy">
                                 <span>{{ post.view_count }}</span>
                             </figcaption>
                         </figure>
@@ -124,8 +176,9 @@
                     <div class="col-md-6">
                         <h4><a href="{% url 'blog:post_detail' post.slug %}">{{ post.title }}</a></h4>
                         <div class="btn-group">
-                            {% comment %} <a href="{% url 'blog:category' post.category %}" class="btn btn-danger">{{ post.get_category_display }}</a> {% endcomment %}
-                            <button class="btn btn-primary"><i class="fa fa-eye" aria-hidden="true"></i> {{ post.view_count }}</button>
+                            <button class="btn btn-primary">
+                                <i class="fa fa-eye" aria-hidden="true"></i> {{ post.view_count }}
+                            </button>
                         </div>
                         <p>Posted on : {{ post.created_at|date:"d.m.Y" }}</p>
                     </div>
@@ -138,7 +191,9 @@
                         <div class="right-side">
                             <h3>About GreenThumb</h3>
                             <figure>
-                                <img src="{% static 'images/contact-us-banner-image.jpg' %}" alt="Plant enthusiast">
+                                <img src="{% static 'images/contact-us-banner-image.jpg' %}" 
+                                     alt="Plant enthusiast"
+                                     loading="lazy">
                             </figure>
                             <h5>Welcome to my plant care blog! I'm passionate about helping people grow healthy plants, whether they're indoor houseplants, beautiful flowers, or productive fruit trees. Join me on this green journey!</h5>
                             <div class="social-links">
@@ -148,7 +203,7 @@
                                 <a href="#"><i class="fa fa-youtube-square" aria-hidden="true"></i></a>
                             </div>
                             <address>
-                                <span>Email:aigeneratedblogs@gmail.com</span>
+                                <span>Email: aigeneratedblogs@gmail.com</span>
                             </address>
                             <h2>Plant Care Questions?</h2>
                             <form id="contact" method="post" class="form" role="form">
