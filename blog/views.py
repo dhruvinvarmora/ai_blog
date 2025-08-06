@@ -15,6 +15,8 @@ from django.views import View
 from django.core.cache import cache
 from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
+from django.db.models import Prefetch
+from .models import Post, PostImage
 class PostListView(ListView):
     model = Post
     template_name = "blog/index.html"
@@ -162,15 +164,21 @@ class AboutView(TemplateView):
 class GalleryView(ListView):
     template_name = "blog/gallery.html"
     context_object_name = 'posts'
-    paginate_by = 12  
+    paginate_by = 12
     
     def get_queryset(self):
         return Post.objects.filter(
-            is_published=True
-        ).prefetch_related('images').order_by('-published_at')
+            is_published=True,
+            images__isnull=False
+        ).prefetch_related(
+            Prefetch('images', 
+                   queryset=PostImage.objects.order_by('order'),
+                   to_attr='ordered_images')
+        ).order_by('-published_at').distinct()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['page_title'] = "Plant Photo Gallery"
         return context
 
 
