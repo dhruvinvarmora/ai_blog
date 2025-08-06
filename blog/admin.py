@@ -86,3 +86,15 @@ class PostImageAdmin(admin.ModelAdmin):
     list_filter = ['post__category']
     search_fields = ['post__title', 'caption']
     ordering = ['post', 'order']
+
+
+class BlogAdminSite(admin.AdminSite):
+    def get_urls(self):
+        urls = super().get_urls()
+        from .urls import urlpatterns as blog_urls
+        return blog_urls + urls
+
+admin_site = BlogAdminSite(name='myadmin')
+
+# Add link in admin index
+admin_site.index_template = 'admin/my_index.html'

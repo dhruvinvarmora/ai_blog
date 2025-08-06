@@ -15,10 +15,13 @@
                             <span class="post-date">{{ post.created_at|date:"F d, Y" }}</span>
                         </div>
                         <div class="featured-image">
-                            <img src="{{ post.featured_image.url }}" 
-                                 class="img-fluid" 
-                                 alt="{{ post.title }} plant care" 
-                                 loading="lazy">
+                        {% if post.featured_image %}
+                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }} plant care" loading="lazy">
+                        {% elif post.featured_image_url %}
+                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }} plant care" loading="lazy">
+                        {% else %}
+                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
+                        {% endif %}
                         </div>
                     </header>
                     
@@ -28,16 +31,23 @@
                     </div>
 
                     <!-- Plant Care Images Section -->
-                    {% comment %} <div class="plant-care-images">
+                    <div class="plant-care-images">
                         <h2 class="section-title">Visual Care Guide</h2>
                         <div class="row">
                             {% for image in post.images.all %}
                             <div class="col-md-6 mb-4">
                                 <div class="plant-image-card">
-                                    <img src="{{ image.image.url }}" 
-                                         class="img-fluid rounded" 
-                                         alt="{{ image.alt_text }}"
-                                         loading="lazy">
+                                    {% if image.image %}
+                                        <img src="{{ image.image.url }}" 
+                                             class="img-fluid rounded" 
+                                             alt="{{ image.alt_text }}"
+                                             loading="lazy">
+                                    {% elif image.image_url %}
+                                        <img src="{{ image.image_url }}" 
+                                             class="img-fluid rounded" 
+                                             alt="{{ image.alt_text }}"
+                                             loading="lazy">
+                                    {% endif %}
                                     <div class="image-caption">
                                         {{ image.caption }}
                                     </div>
@@ -45,7 +55,7 @@
                             </div>
                             {% endfor %}
                         </div>
-                    </div> {% endcomment %}
+                    </div>
                 </article>
             </div>
             
@@ -53,20 +63,33 @@
             <div class="col-lg-4 col-md-12">
                 <aside class="sidebar">
                     <div class="plant-thumbnail mb-4">
-                        <img src="{{ post.thumbnail.url }}" 
-                             class="img-fluid rounded" 
-                             alt="{{ post.title }} thumbnail">
+                        {% if post.thumbnail %}
+                            <img src="{{ post.thumbnail.url }}" 
+                                 class="img-fluid rounded" 
+                                 alt="{{ post.title }} thumbnail">
+                        {% elif post.thumbnail_url %}
+                            <img src="{{ post.thumbnail_url }}" 
+                                 class="img-fluid rounded" 
+                                 alt="{{ post.title }} thumbnail">
+                        {% endif %}
                     </div>
                     
                     <div class="widget recent-posts-widget">
                         <h3>More Plant Care Guides</h3>
                         <ul class="list-unstyled">
-                            {% for recent_post in posts|slice:":5" %}
+                            {% for recent_post in related_posts %}
                             <li class="media mb-3">
-                                <img src="{{ recent_post.thumbnail.url }}" 
-                                     class="mr-3" 
-                                     width="60" 
-                                     alt="{{ recent_post.title }} thumbnail">
+                                {% if recent_post.thumbnail %}
+                                    <img src="{{ recent_post.thumbnail.url }}" 
+                                         class="mr-3" 
+                                         width="60" 
+                                         alt="{{ recent_post.title }} thumbnail">
+                                {% elif recent_post.thumbnail_url %}
+                                    <img src="{{ recent_post.thumbnail_url }}" 
+                                         class="mr-3" 
+                                         width="60" 
+                                         alt="{{ recent_post.title }} thumbnail">
+                                {% endif %}
                                 <div class="media-body">
                                     <h6 class="mt-0 mb-1">
                                         <a href="{% url 'blog:post_detail' recent_post.slug %}">

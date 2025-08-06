@@ -2,12 +2,13 @@ from django.db import models
 from django.utils.text import slugify
 from django.utils import timezone
 import os
-
+from cloudinary.models import CloudinaryField
 # Create your models here.
 from django.db import models
+from decouple import config
 
 class Category(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     description = models.TextField(blank=True)
     
@@ -18,7 +19,7 @@ class Category(models.Model):
         return self.name
 
 class Tag(models.Model):
-    name = models.CharField(max_length=50)
+    name = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
     
     def __str__(self):
@@ -49,14 +50,14 @@ class PostImage(models.Model):
         ('decor', 'Decor'),
     )
     post = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='images')
-    image = models.ImageField(upload_to=post_image_path, blank=True, null=True)
-    image_url = models.URLField(blank=True)  # Keep for external URLs
-    caption = models.CharField(max_length=200, blank=True)
-    alt_text = models.CharField(max_length=200, blank=True)
+    image = CloudinaryField('image', folder='posts/images/', blank=True, null=True)
+    image_url = models.URLField(blank=True,max_length=500)  # Keep for external URLs
+    caption = models.TextField(blank=True)
+    alt_text = models.TextField(blank=True)
     # order = models.CharField(null=True, blank=True, max_length=255)
     order = models.PositiveIntegerField(default=0)
     is_downloaded = models.BooleanField(default=False)
-    image_type = models.CharField(max_length=20, choices=IMAGE_TYPES)
+    image_type = models.CharField(max_length=255, choices=IMAGE_TYPES)
 
     
     class Meta:
@@ -81,45 +82,45 @@ class Post(models.Model):
         ('care', 'Plant Care'),
     ]
     
-    title = models.CharField(max_length=200)
+    title = models.TextField()
     slug = models.SlugField(unique=True)
     content = models.TextField()
     summary = models.TextField()
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='plants')
+    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='plants')
     tags = models.ManyToManyField(Tag, blank=True)
-    destination_name = models.CharField(max_length=100, blank=True)
-    country = models.CharField(max_length=100, blank=True)
+    destination_name = models.TextField(blank=True)
+    country = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     published_at = models.DateTimeField(default=timezone.now)
     
     # Local image storage
-    thumbnail = models.ImageField(upload_to=post_thumbnail_path, blank=True, null=True)
-    featured_image = models.ImageField(upload_to=post_featured_path, blank=True, null=True)
+    thumbnail = CloudinaryField('image', folder='posts/thumbnails/', blank=True, null=True)
+    featured_image = CloudinaryField('image', folder='posts/featured/', blank=True, null=True)
     
     # Keep URL fields for fallback
-    thumbnail_url = models.URLField(blank=True)
-    featured_image_url = models.URLField(blank=True)
-    video_url = models.URLField(blank=True)
+    thumbnail_url = models.URLField(blank=True,max_length=500)
+    featured_image_url = models.URLField(blank=True,max_length=500)
+    video_url = models.URLField(blank=True,max_length=500)
     
     is_featured = models.BooleanField(default=False)
     is_published = models.BooleanField(default=True)
     view_count = models.PositiveIntegerField(default=0)
     
     # Plant/Fruit specific fields
-    scientific_name = models.CharField(max_length=200, blank=True)
-    family = models.CharField(max_length=100, blank=True)
+    scientific_name = models.TextField(blank=True)
+    family = models.TextField(blank=True)
     care_difficulty = models.CharField(max_length=20, choices=[
         ('easy', 'Easy'),
         ('medium', 'Medium'),
         ('hard', 'Hard'),
     ], blank=True)
-    watering_needs = models.CharField(max_length=50, blank=True)
-    sunlight_requirements = models.CharField(max_length=50, blank=True)
-    growth_rate = models.CharField(max_length=50, blank=True)
-    max_height = models.CharField(max_length=50, blank=True)
-    blooming_season = models.CharField(max_length=100, blank=True)
-    harvest_time = models.CharField(max_length=100, blank=True)
+    watering_needs = models.TextField(blank=True)
+    sunlight_requirements = models.TextField(blank=True)
+    growth_rate = models.TextField(blank=True)
+    max_height = models.TextField(blank=True)
+    blooming_season = models.TextField(blank=True)
+    harvest_time = models.TextField(blank=True,null=True)
     
     class Meta:
         ordering = ['-published_at']
@@ -130,6 +131,15 @@ class Post(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = slugify(self.title)
+
+        if not self.thumbnail and not self.thumbnail_url:
+            # Use a default placeholder
+            cloudinary_cloud_name = config("CLOUDINARY_CLOUD_NAME", default="demo")
+            self.thumbnail_url = f"https://res.cloudinary.com/{cloudinary_cloud_name}/image/upload/v1/plant-placeholder.jpg"
+        
+        if not self.featured_image and not self.featured_image_url:
+            self.featured_image_url = f"https://res.cloudinary.com/{cloudinary_cloud_name}/image/upload/v1/plant-featured-placeholder.jpg"
+        
         super().save(*args, **kwargs)
     
     def get_absolute_url(self):
@@ -188,9 +198,9 @@ class Post(models.Model):
     
 
 class ContactMessage(models.Model):
-    name = models.CharField(max_length=100)
+    name = models.CharField(max_length=255)
     email = models.EmailField()
-    subject = models.CharField(max_length=200)
+    subject = models.CharField(max_length=255)
     message = models.TextField()
     created_at = models.DateTimeField(default=timezone.now)
     is_responded = models.BooleanField(default=False)

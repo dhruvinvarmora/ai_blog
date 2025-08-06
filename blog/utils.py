@@ -15,10 +15,9 @@ def download_image(url, filename=None):
         response = requests.get(url, timeout=10, stream=True)
         response.raise_for_status()
         
-        # Create unique filename using Unsplash ID
+        # Create unique filename
         parsed = urlparse(url)
-        path = parsed.path
-        unique_id = path.split('/')[-1] if path else hashlib.md5(url.encode()).hexdigest()[:8]
+        unique_id = hashlib.md5(url.encode()).hexdigest()[:12]
         
         # Get content type for extension
         content_type = response.headers.get('content-type', '')
@@ -33,33 +32,34 @@ def download_image(url, filename=None):
         print(f"Error downloading image: {e}")
         return None, None
 
-def is_plant_image(image_content):
-    """Simple verification that image contains plants"""
+def is_plant_image(image_file):
+    """More lenient plant image verification"""
     try:
-        # Open image and convert to RGB
-        img = Image.open(io.BytesIO(image_content)).convert('RGB')
-        img = img.resize((224, 224))  # Resize for processing
+        from PIL import Image
+        import io
+        import numpy as np
         
-        # Convert to numpy array
+        # Open image
+        img = Image.open(io.BytesIO(image_file.read()))
+        
+        # Convert to array
         img_array = np.array(img)
         
-        # Calculate green pixel percentage
-        green_pixels = np.sum(
-            (img_array[:, :, 1] > img_array[:, :, 0]) & 
-            (img_array[:, :, 1] > img_array[:, :, 2])
-        )
-        green_percentage = green_pixels / (224 * 224)
+        # Check for dominant green colors (HSV space)
+        hsv_img = img.convert('HSV')
+        h,s,v = hsv_img.split()
+        green_pixels = np.sum((np.array(h) > 30) & (np.array(h) < 90))
+        total_pixels = img_array.shape[0] * img_array.shape[1]
         
-        # Consider it a plant image if >15% green
-        return green_percentage > 0.15
+        # Consider it a plant if >15% green or looks like a flower
+        return (green_pixels/total_pixels > 0.15) or ('flower' in image_file.name.lower())
         
-    except Exception as e:
-        print(f"⚠️ Plant verification failed: {e}")
-        return True  # Assume valid if verification fails
+    except Exception:
+        return True  # Fallback to accept image if verification fails
 
 def optimize_image(image_file, max_size=(1200, 800), quality=85):
     """
-    Optimize image for web display
+    Optimize image for web display before uploading to Cloudinary
     """
     try:
         # Open image directly from ContentFile
@@ -78,17 +78,10 @@ def optimize_image(image_file, max_size=(1200, 800), quality=85):
         img.save(output, format='JPEG', quality=quality, optimize=True)
         output.seek(0)
         
-        # Create new ContentFile with original filename
         return ContentFile(output.getvalue(), name=image_file.name)
         
     except Exception as e:
         print(f"Error optimizing image: {e}")
-        # Return original content if optimization fails
-        return image_file
-        
-    except Exception as e:
-        print(f"Error optimizing image: {e}")
-        # Return original content if optimization fails
         return image_file
 
 def get_plant_specific_images(plant_name, category, count=6):

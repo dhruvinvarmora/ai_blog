@@ -64,7 +64,13 @@
                 <div class="row">
                     {% for post in posts|slice:":3" %}
                     <a href="{% url 'blog:post_detail' post.slug %}" class="col-xl-{% cycle '6' '3' '3' %} col-md-4 box-{% cycle '1' '2' '2' %}">
-                        <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% if post.featured_image %}
+                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% elif post.featured_image_url %}
+                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% else %}
+                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
+                        {% endif %}
                         <div class="overlay">
                             <img src="{% static 'images/comment.png' %}" alt="plus-icon">
                             <div class="text">{{ post.title }} <span>{{ post.get_category_display }}</span></div>
@@ -76,7 +82,13 @@
                 <div class="row">
                     {% for post in posts|slice:"3:6" %}
                     <a href="{% url 'blog:post_detail' post.slug %}" class="col-xl-{% cycle '3' '3' '6' %} col-md-4 box-{% cycle '2' '2' '1' %}">
-                        <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% if post.featured_image %}
+                           <img src="{{ post.featured_image.url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% elif post.featured_image_url %}
+                           <img src="{{ post.featured_image_url }}" class="img-fluid" alt="{{ post.title }}">
+                        {% else %}
+                          <img src="{% static 'images/placeholder.jpg' %}" alt="No Image">
+                        {% endif %}
                         <div class="overlay">
                             <img src="{% static 'images/comment.png' %}" alt="plus-icon">
                             <div class="text">{{ post.title }} <span>{{ post.get_category_display }}</span></div>

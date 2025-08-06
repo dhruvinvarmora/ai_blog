@@ -1,0 +1,22 @@
+{% extends "admin/base_site.html" %}
+
+{% block content %}
+<div class="module">
+    <h2>Generate New Blog Post</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="form-row">
+            <label for="category">Category (optional):</label>
+            <select name="category" id="category">
+                <option value="">Auto-rotate</option>
+                <option value="plants">Plants</option>
+                <option value="flowers">Flowers</option>
+                <option value="fruits">Fruits</option>
+            </select>
+        </div>
+        <div class="submit-row">
+            <button type="submit" class="button">Generate Post</button>
+        </div>
+    </form>
+</div>
+{% endblock %}
