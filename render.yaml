@@ -1,15 +1,39 @@
 services:
   - type: web
-    name: ai-blog
+    name: autoblog-web
     runtime: python
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn ai_blog.wsgi:application"
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn autoblog.wsgi:application
     envVars:
-      - key: DATABASE_URL
-        fromDatabase:
-          name: ai_blog_db
-          property: connectionString
-      - key: SECRET_KEY
-        generateValue: true
-      - key: DEBUG
-        value: "False"
+      - key: DJANGO_SETTINGS_MODULE
+        value: autoblog.settings
+      - key: CELERY_BROKER_URL
+        value: ${REDIS_URL}
+      - key: CELERY_RESULT_BACKEND
+        value: ${REDIS_URL}
+
+  - type: worker
+    name: celery-worker
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A autoblog worker --loglevel=info --pool=solo -Q default
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: autoblog.settings
+      - key: CELERY_BROKER_URL
+        value: ${REDIS_URL}
+      - key: CELERY_RESULT_BACKEND
+        value: ${REDIS_URL}
+
+  - type: worker
+    name: celery-beat
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A autoblog beat --loglevel=info
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: autoblog.settings
+      - key: CELERY_BROKER_URL
+        value: ${REDIS_URL}
+      - key: CELERY_RESULT_BACKEND
+        value: ${REDIS_URL}

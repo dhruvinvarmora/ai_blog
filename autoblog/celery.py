@@ -22,3 +22,6 @@ if os.name == 'nt':
 @app.task(bind=True)
 def debug_task(self):
     print(f'Request: {self.request!r}')
+# Windows-specific settings
+if os.name == 'nt':
+    app.conf.worker_pool = 'solo'    
