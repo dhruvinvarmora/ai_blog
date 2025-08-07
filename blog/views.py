@@ -3,7 +3,8 @@ from django.views.generic import ListView, DetailView, TemplateView,FormView
 from django.db.models import Q
 from django.utils import timezone
 from blog.forms import ContactForm
-from .models import Post, Category, Tag,ContactMessage
+from blog.tasks import generate_blog_post
+from .models import Post, Category, PostScheduler, Tag,ContactMessage
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.contrib.admin.views.decorators import staff_member_required
@@ -17,6 +18,7 @@ from django.views.decorators.cache import cache_page
 from django.utils.decorators import method_decorator
 from django.db.models import Prefetch
 from .models import Post, PostImage
+from django.http import JsonResponse
 class PostListView(ListView):
     model = Post
     template_name = "blog/index.html"
@@ -227,31 +229,81 @@ class ContactView(FormView):
     
 
 
-
 @method_decorator(staff_member_required, name='dispatch')
 class GeneratePostView(View):
     """
-    Admin-only view for manually generating blog posts
+    Admin-only view for manually generating blog posts with Celery integration
     """
     template_name = 'admin/generate_post.html'
     
     def get(self, request, *args, **kwargs):
-        """Handle GET requests - show the generation form"""
-        return render(request, self.template_name)
+        """Handle GET requests - show the generation form with current status"""
+        scheduler = PostScheduler.objects.get_or_create(pk=1)[0]
+        context = {
+            'last_run': scheduler.last_run,
+            'is_running': scheduler.is_running,
+            'available_categories': ['plants', 'flowers', 'fruits', 'gardening', 'care'],
+            'active_task_id': scheduler.task_id
+        }
+        return render(request, self.template_name, context)
     
     def post(self, request, *args, **kwargs):
-        """Handle POST requests - process the generation"""
+        """Handle POST requests - trigger async post generation"""
         try:
-            cmd = Command()
-            category = request.POST.get('category')
+            scheduler = PostScheduler.objects.get_or_create(pk=1)[0]
             
-            # Call the management command with form data
-            cmd.handle(category=category or None)
+            if scheduler.is_running:
+                messages.warning(request, '⚠️ Post generation is already in progress')
+                return redirect('blog:home')
             
-            messages.success(request, '🌿 Post generated successfully!')
+            category = request.POST.get('category', '').lower()
+            if category and category not in ['plants', 'flowers', 'fruits', 'gardening', 'care']:
+                raise ValueError("Invalid category selected")
+            
+            # Start Celery task
+            task = generate_blog_post.delay(category=category or None)
+            
+            # Store task ID for status checking
+            scheduler.task_id = task.id
+            scheduler.is_running = True
+            scheduler.save()
+            
+            messages.info(request, '🔄 Started generating post in background...')
+            messages.info(request, f'Task ID: {task.id}')
+            
         except Exception as e:
-            messages.error(request, f'❌ Error: {str(e)}')
-            # For debugging in admin (remove in production)
-            messages.info(request, f'Debug: {repr(e)}')
+            scheduler.is_running = False
+            scheduler.save()
+            messages.error(request, f'❌ Error starting generation: {str(e)}')
+            if request.user.is_superuser:
+                messages.debug(request, f'Technical details: {repr(e)}')
         
         return redirect('blog:home')
+
+
+@method_decorator(staff_member_required, name='dispatch')
+class TaskStatusView(View):
+    """View to check Celery task status"""
+    
+    def get(self, request, *args, **kwargs):
+        from celery.result import AsyncResult
+        from .models import PostScheduler
+        
+        scheduler = PostScheduler.objects.get_or_create(pk=1)[0]
+        task_status = {}
+        
+        if scheduler.task_id:
+            task = AsyncResult(scheduler.task_id)
+            task_status = {
+                'task_id': scheduler.task_id,
+                'status': task.status,
+                'result': task.result,
+                'ready': task.ready(),
+                'failed': task.failed(),
+            }
+        
+        return JsonResponse({
+            'is_running': scheduler.is_running,
+            'last_run': scheduler.last_run,
+            'task': task_status
+        })
