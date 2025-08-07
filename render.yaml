@@ -2,7 +2,9 @@ services:
   - type: web
     name: autoblog-web
     runtime: python
-    buildCommand: pip install -r requirements.txt
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate
     startCommand: gunicorn autoblog.wsgi:application
     envVars:
       - key: DJANGO_SETTINGS_MODULE
@@ -16,7 +18,7 @@ services:
     name: celery-worker
     runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A autoblog worker --loglevel=info --pool=solo -Q default
+    startCommand: celery -A autoblog worker --loglevel=info --pool=prefork --concurrency=1 -Q default
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: autoblog.settings
@@ -28,8 +30,10 @@ services:
   - type: worker
     name: celery-beat
     runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: celery -A autoblog beat --loglevel=info
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py migrate
+    startCommand: celery -A autoblog beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: autoblog.settings
