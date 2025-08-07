@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'blog',
     'cloudinary',
     'cloudinary_storage',
+    'django_celery_beat',
 ]
 
 MIDDLEWARE = [
@@ -168,3 +169,41 @@ CLOUDINARY_STORAGE = {
 }
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 STATICFILES_STORAGE = 'cloudinary_storage.storage.StaticHashedCloudinaryStorage'
+
+import ssl
+# Celery Configuration
+CELERY_BROKER_URL = config("REDIS_URL")
+CELERY_RESULT_BACKEND = config("REDIS_URL")
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'
+CELERY_TASK_TIME_LIMIT = 1200  # 20 minutes
+CELERY_TASK_SOFT_TIME_LIMIT = 600  # 10 minutes
+CELERY_TASK_MAX_RETRIES = 3
+CELERY_TASK_TRACK_STARTED = True
+CELERY_WORKER_CONCURRENCY = 1  # Important for Windows
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1  # Important for Windows
+CELERY_WORKER_MAX_TASKS_PER_CHILD = 1  # Important for Windows
+
+# For Windows compatibility
+CELERY_WORKER_POOL = 'solo'  # Use this instead of prefork on Windows
+from celery.schedules import crontab
+
+# SSL Configuration for Redis
+if CELERY_BROKER_URL.startswith("rediss://"):
+    broker_use_ssl = {
+        'ssl_cert_reqs': ssl.CERT_NONE
+    }
+    CELERY_BROKER_USE_SSL = broker_use_ssl
+    CELERY_REDIS_BACKEND_USE_SSL = broker_use_ssl
+CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
+CELERY_BEAT_SCHEDULE = {
+    'generate-daily-post': {
+        'task': 'blog.tasks.generate_daily_post',
+        'schedule': crontab(hour=3, minute=0),  # 3 AM daily
+        'options': {
+            'queue': 'default'
+        }
+    },
+}    

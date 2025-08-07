@@ -15,6 +15,9 @@ import cloudinary
 import cloudinary.uploader
 from urllib3.util import Retry
 from requests.adapters import HTTPAdapter
+import psutil
+import tracemalloc
+from datetime import timedelta
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -41,40 +44,61 @@ def slugify(text):
 
 class Command(BaseCommand):
     help = "Generate automated daily blog posts about plants, flowers, and fruits with Cloudinary image storage"
+    
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.verbose = False  # Initialize verbose attribute
+        self.verbose = False
+        self.session = requests.Session()
+        self.setup_retry_strategy()
+        self.genai_model = "gemini-1.5-flash"
+        self.max_retries = 3
+        self.chunk_size = 500
+        tracemalloc.start()  # Start memory tracking
+
+    def setup_retry_strategy(self):
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[408, 429, 500, 502, 503, 504],
+            allowed_methods=["GET", "POST"]
+        )
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        self.session.mount("https://", adapter)
+
     def add_arguments(self, parser):
-        parser.add_argument(
-            '--category',
-            type=str,
-            choices=['plants', 'flowers', 'fruits', 'gardening', 'care'],
-            default=None,
-            help='Specific category to generate post for'
-        )
-        parser.add_argument(
-            '--force',
-            action='store_true',
-            help='Force generation even if post exists'
-        )
+        parser.add_argument('--category', type=str, choices=['plants', 'flowers', 'fruits', 'gardening', 'care'])
+        parser.add_argument('--force', action='store_true')
+        parser.add_argument('--verbose', action='store_true')
+        parser.add_argument('--task-id', type=str, help='Celery task ID for tracking')
+
+    def log_memory(self, stage):
+        """Log memory usage at different stages"""
+        process = psutil.Process()
+        mem_info = process.memory_info()
+        snapshot = tracemalloc.take_snapshot()
+        top_stats = snapshot.statistics('lineno')
+        
+        logger.debug(f"🧠 {stage} Memory Usage:")
+        logger.debug(f"  - RSS: {mem_info.rss / 1024 / 1024:.2f} MB")
+        logger.debug(f"  - VMS: {mem_info.vms / 1024 / 1024:.2f} MB")
+        
+        if self.verbose:
+            for stat in top_stats[:3]:
+                logger.debug(f"  - {stat}")
 
     def log_error(self, message, exc_info=False):
-        """Helper method for consistent error logging"""
         logger.error(message, exc_info=exc_info)
         self.stdout.write(self.style.ERROR(message))
 
     def log_info(self, message):
-        """Helper method for consistent info logging"""
         logger.info(message)
         self.stdout.write(self.style.SUCCESS(message))
 
     def log_warning(self, message):
-        """Helper method for consistent warning logging"""
         logger.warning(message)
         self.stdout.write(self.style.WARNING(message))
 
     def log_debug(self, message):
-        """Helper method for debug logging"""
         logger.debug(message)
         if self.verbose:
             self.stdout.write(self.style.NOTICE(message))
@@ -88,31 +112,21 @@ class Command(BaseCommand):
                 self.log_warning("❌ Unsplash access key not configured")
                 return images
             
-            session = requests.Session()
-            retry_strategy = Retry(
-                total=3,
-                backoff_factor=1,
-                status_forcelist=[500, 502, 503, 504],
-                allowed_methods=["GET"]
-            )
-            adapter = HTTPAdapter(max_retries=retry_strategy)
-            session.mount("https://", adapter)
-
-            # Add plant-specific filters to the query
             plant_query = f"{query} plant|foliage|leaf|flower|fruit|botanical|garden|nature"
             
             url = "https://api.unsplash.com/search/photos"
             params = {
                 'query': plant_query,
-                'per_page': count + 5,  # Get extras to filter out non-plant images
+                'per_page': count + 5,
                 'orientation': 'landscape',
-                'content_filter': 'high'  # Higher quality content
+                'content_filter': 'high'
             }
             headers = {'Authorization': f'Client-ID {access_key}'}
             
-            response = session.get(url, params=params, headers=headers, timeout=15)
+            response = self.session.get(url, params=params, headers=headers, timeout=15)
             response.raise_for_status()
             data = response.json()
+            
             plant_images = []
             for photo in data.get('results', []):
                 plant_keywords = {'plant', 'foliage', 'leaf', 'flower', 'fruit', 'tree', 
@@ -132,7 +146,6 @@ class Command(BaseCommand):
                     'description': description or query
                 })
             
-            # Return only the requested count of verified plant images
             return [
                 {
                     'url': img['url'],
@@ -149,11 +162,9 @@ class Command(BaseCommand):
     def upload_to_cloudinary(self, image_url, public_id):
         """Upload image to Cloudinary with proper error handling"""
         try:
-            # Validate inputs
             if not image_url or not public_id:
                 raise ValueError("Missing required parameters for Cloudinary upload")
                 
-            # Configure upload parameters
             result = cloudinary.uploader.upload(
                 image_url,
                 public_id=public_id,
@@ -181,10 +192,8 @@ class Command(BaseCommand):
     def store_image(self, post, image_url, caption, alt_text, order, image_type):
         """Store image reference in database with Cloudinary URL"""
         try:
-            # Generate unique public ID
             public_id = f"{slugify(post.title)}-{image_type}-{order}"
             
-            # Upload to Cloudinary
             cloudinary_url = self.upload_to_cloudinary(image_url, public_id)
             
             if not cloudinary_url:
@@ -192,7 +201,6 @@ class Command(BaseCommand):
                 placeholder = "https://res.cloudinary.com/demo/image/upload/v1/plant-placeholder.jpg"
                 cloudinary_url = placeholder
             
-            # Create PostImage object
             post_image = PostImage(
                 post=post,
                 image_url=cloudinary_url,
@@ -351,7 +359,6 @@ class Command(BaseCommand):
             model = genai.GenerativeModel("gemini-1.5-flash")
             response = model.generate_content(prompt)
             
-            # Clean and parse JSON response
             content = response.text
             if '```json' in content:
                 content = content.split('```json')[1].split('```')[0]
@@ -379,97 +386,64 @@ class Command(BaseCommand):
                 self.log_warning(f"⚠️ Error creating tag {tag_name}: {e}")
         return tags
 
-    def download_and_store_images(self, post, plant_name, category):
-        """Download and store all images for the post"""
-        # Store main images
-        self.store_main_images(post, plant_name, category)
-        
-        # Store additional content images
-        image_types = ['overview', 'care', 'closeup', 'indoor', 'healthy', 'decor']
-        
-        for i, image_type in enumerate(image_types):
-            query = f"{plant_name} {image_type}"
-            unsplash_images = self.get_unsplash_images(query, 1)
-            
-            if unsplash_images:
-                image_data = unsplash_images[0]
-                caption = create_image_captions(plant_name, category, image_type)
-                alt_text = generate_alt_text(plant_name, category, image_type)
-                
-                self.store_image(
-                    post,
-                    image_data['url'],
-                    caption,
-                    alt_text,
-                    i+1,
-                    image_type
-                )
-
-    def store_main_images(self, post, plant_name, category):
-        """Download and store thumbnail and featured images"""
-        # Thumbnail
-        thumbnail_query = f"{plant_name} {category}"
-        thumbnail_images = self.get_unsplash_images(thumbnail_query, 1)
-        
-        if thumbnail_images:
-            post.thumbnail_url = self.upload_to_cloudinary(
-                thumbnail_images[0]['url'],
-                f"{slugify(post.title)}-thumbnail"
-            )
-        
-        # Featured image
-        featured_query = f"{plant_name} close up"
-        featured_images = self.get_unsplash_images(featured_query, 1)
-        
-        if featured_images:
-            post.featured_image_url = self.upload_to_cloudinary(
-                featured_images[0]['url'],
-                f"{slugify(post.title)}-featured"
-            )
-        
-        post.save()
-
-    def handle(self, *args, **kwargs):
+    def generate_post_stages(self, kwargs):
+        """Generate post in stages with memory management"""
         try:
+            self.log_memory("Before category selection")
             category = kwargs.get('category')
-            force = kwargs.get('force')
             topics = self.get_daily_topics()
             
-            # Determine category rotation
             if not category:
                 categories = list(topics.keys())
                 today = timezone.now().date()
                 category_index = (today.day - 1) % len(categories)
                 category = categories[category_index]
             
-            # Get today's topic
+            self.log_memory("After category selection")
+            
             topic_list = topics[category]
             today = timezone.now().date()
             topic_index = (today.day - 1) % len(topic_list)
             topic = topic_list[topic_index]
             slug = slugify(topic)
             
-            # Check if post exists
-            if Post.objects.filter(slug=slug).exists() and not force:
+            if Post.objects.filter(slug=slug).exists() and not kwargs.get('force'):
                 self.log_warning(f"⚠️ Post already exists: {topic}")
-                return
+                return None
             
             self.log_info(f"🌱 Generating post for category: {category}")
             self.log_info(f"📝 Topic: {topic}")
             
-            # Generate content
+            self.log_memory("Before content generation")
             data = self.generate_post_content(topic, category)
             if not data:
-                self.log_error("❌ Failed to generate content")
-                return
+                raise ValueError("Failed to generate content")
             
-            # Extract plant name
-            plant_name = topic.split()[0]
+            self.log_memory("After content generation")
+            return {
+                'topic': topic,
+                'slug': slug,
+                'category': category,
+                'data': data,
+                'plant_name': topic.split()[0]
+            }
             
-            # Create post
+        except Exception as e:
+            self.log_error(f"❌ Error in post generation stages: {e}", exc_info=True)
+            return None
+
+    def handle_images(self, post_data, *args, **kwargs):
+        """Handle all image-related operations"""
+        try:
+            self.verbose = kwargs.get('verbose', False)
+            self.log_memory("Before image processing")
+            data = post_data['data']
+            plant_name = post_data['plant_name']
+            category = post_data['category']
+            
             post = Post(
                 title=data['title'],
-                slug=slug,
+                slug=post_data['slug'],
                 content=data['content'],
                 summary=data['summary'],
                 category=category,
@@ -482,26 +456,92 @@ class Command(BaseCommand):
                 max_height=data.get('max_height', ''),
                 blooming_season=data.get('blooming_season', ''),
                 harvest_time=data.get('harvest_time', ''),
-                video_url=self.get_youtube_video(data.get('video_search_query', topic)),
+                video_url=self.get_youtube_video(data.get('video_search_query', post_data['topic'])),
                 published_at=timezone.now()
             )
             post.save()
             
-            # Add tags
             tags = self.create_or_get_tags(data.get('tags', []))
             post.tags.set(tags)
             
-            # Download and store images
-            self.download_and_store_images(post, plant_name, category)
+            # Process thumbnail and featured image
+            thumbnail_query = f"{plant_name} {category}"
+            thumbnail_images = self.get_unsplash_images(thumbnail_query, 1)
+            
+            if thumbnail_images:
+                post.thumbnail_url = self.upload_to_cloudinary(
+                    thumbnail_images[0]['url'],
+                    f"{slugify(post.title)}-thumbnail"
+                )
+            
+            featured_query = f"{plant_name} close up"
+            featured_images = self.get_unsplash_images(featured_query, 1)
+            
+            if featured_images:
+                post.featured_image_url = self.upload_to_cloudinary(
+                    featured_images[0]['url'],
+                    f"{slugify(post.title)}-featured"
+                )
+            
+            post.save()
+            
+            # Process content images
+            image_types = ['overview', 'care', 'closeup', 'indoor', 'healthy', 'decor']
+            
+            for i, image_type in enumerate(image_types):
+                query = f"{plant_name} {image_type}"
+                unsplash_images = self.get_unsplash_images(query, 1)
+                
+                if unsplash_images:
+                    image_data = unsplash_images[0]
+                    caption = create_image_captions(plant_name, category, image_type)
+                    alt_text = generate_alt_text(plant_name, category, image_type)
+                    
+                    self.store_image(
+                        post,
+                        image_data['url'],
+                        caption,
+                        alt_text,
+                        i+1,
+                        image_type
+                    )
+            
+            self.log_memory("After image processing")
+            return post
+            
+        except Exception as e:
+            self.log_error(f"❌ Error handling images: {e}", exc_info=True)
+            if 'post' in locals() and post.pk:
+                post.delete()
+            raise
 
-            self.log_info(f"✅ Post created successfully: {data['title']}")
-            self.log_info(f"📸 Thumbnail: {post.thumbnail_url or 'Placeholder'}")
-            self.log_info(f"🎥 Video: {post.video_url}")
-            self.log_info(f"🏷️ Tags: {', '.join([tag.name for tag in tags])}")
-            self.log_info(f"🖼️ Created {post.images.count()} additional images")
+    def handle(self, *args, **kwargs):
+        try:
+            self.verbose = kwargs['verbose']
+            self.log_info("🚀 Starting post generation process")
+            self.log_memory("Initial memory usage")
+            
+            # Generate in stages with checkpoints
+            post_data = self.generate_post_stages(kwargs)
+            
+            if post_data:
+                # Optimized image handling
+                post = self.handle_images(post_data)
+                
+                self.log_info(f"✅ Successfully created post: {post.title}")
+                self.log_memory("Final memory usage")
+                
+                return {
+                    'status': 'success',
+                    'post_id': post.id,
+                    'title': post.title
+                }
             
         except Exception as e:
             self.log_error(f"❌ Post generation failed: {str(e)}", exc_info=True)
-            if 'post' in locals() and post.pk:
-                post.delete()
-                self.log_info("❌ Deleted incomplete post due to error")
+            return {
+                'status': 'error',
+                'error': str(e)
+            }
+        finally:
+            tracemalloc.stop()

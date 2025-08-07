@@ -241,5 +241,13 @@ class ContactMessage(models.Model):
         return f"Message from {self.name} - {self.subject}"
 
 class PostScheduler(models.Model):
-    last_run = models.DateTimeField(auto_now=True)
-    is_running = models.BooleanField(default=False)    
+    last_run = models.DateTimeField(default=timezone.now)
+    is_running = models.BooleanField(default=False)
+    task_id = models.CharField(max_length=255, blank=True, null=True)
+    
+    def __str__(self):
+        return f"Scheduler (Last run: {self.last_run}, Running: {self.is_running})"
+    
+    class Meta:
+        verbose_name = "Post Scheduler"
+        verbose_name_plural = "Post Scheduler"   
